@@ -263,19 +263,25 @@ class HNNGUI:
         in the network.
     """
 
-    def __init__(self, theme_color="#802989",
-                 total_height=800,
-                 total_width=1300,
-                 header_height=50,
-                 button_height=30,
-                 operation_box_height=60,
-                 drive_widget_width=200,
-                 left_sidebar_width=576,
-                 log_window_height=150,
-                 status_height=30,
-                 dpi=96,
-                 network_configuration=default_network_configuration,
-                 ):
+    def __init__(
+            self,
+            theme_color="#802989",
+            total_height=800,
+            total_width=1300,
+            header_height=50,
+            button_height=30,
+            operation_box_height=60,
+            drive_widget_width=200,
+            left_sidebar_width=576,
+            log_window_height=150,
+            status_height=30,
+            dpi=96,
+            network_configuration=default_network_configuration,
+            uploaded_data={},
+            ):
+        # store uploaded data
+        self.uploaded_data = uploaded_data
+
         # set up styling.
         self.total_height = total_height
         self.total_width = total_width
@@ -556,8 +562,12 @@ class HNNGUI:
 
         self._log_out = Output()
 
-        self.viz_manager = _VizManager(self.data, self.layout,
-                                       self.fig_default_params)
+        self.viz_manager = _VizManager(
+            self.data,
+            self.uploaded_data,
+            self.layout,
+            self.fig_default_params
+        )
 
         # detailed configuration of backends
         self._backend_config_out = Output()
@@ -640,8 +650,13 @@ class HNNGUI:
             )
 
         def _on_upload_data(change):
-            return on_upload_data_change(change, self.data, self.viz_manager,
-                                         self._log_out)
+            return on_upload_data_change(
+                change,
+                self.data,
+                self.viz_manager,
+                self._log_out,
+                self.uploaded_data,
+            )
 
         def _run_button_clicked(b):
             return run_button_clicked(
@@ -1877,9 +1892,16 @@ def get_cell_param_default_value(cell_type_key, param_dict):
     return param_dict[cell_type_key]
 
 
-def on_upload_data_change(change, data, viz_manager, log_out):
+def on_upload_data_change(
+        change,
+        data,
+        viz_manager,
+        log_out,
+        uploaded_data,
+        ):
     if len(change['owner'].value) == 0:
         return
+
     # Parsing file information from the 'change' object passed in from
     # the upload file widget.
     data_dict = change['new'][0]
@@ -1896,13 +1918,22 @@ def on_upload_data_change(change, data, viz_manager, log_out):
     # Read the file
     ext_content = data_dict['content']
     ext_content = codecs.decode(ext_content, encoding="utf-8")
+
+    # Store uploaded_data
+    uploaded_data[data_fname] = {
+        'content': ext_content
+    }
+
     with (log_out):
         # Write loaded data to data object
         data['simulation_data'][data_fname] = {
-            'net': None, 'dpls': [_read_dipole_txt(io.StringIO(ext_content),
-                                                   file_extension
-                                                   )
-                                  ]}
+            'net': None,
+            'dpls': [
+                _read_dipole_txt(
+                    io.StringIO(ext_content),
+                    file_extension
+                )]
+        }
         logger.info(f'External data {data_fname} loaded.')
 
         # Create a dipole plot
@@ -1920,6 +1951,10 @@ def on_upload_data_change(change, data, viz_manager, log_out):
                                           )
         # Reset the load file widget
         change['owner'].value = []
+
+        logger.debug(
+            f'All uploaded data: {uploaded_data.keys()}'
+        )
 
 
 def _drive_widget_to_dict(drive, name):

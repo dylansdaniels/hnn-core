@@ -625,7 +625,14 @@ def _clear_axis(b, widgets, data, fig_idx, fig, ax, widgets_plot_type,
         _dynamic_rerender(fig)
 
 
-def _get_ax_control(widgets, data, fig_default_params, fig_idx, fig, ax):
+def _get_ax_control(
+        widgets,
+        data,
+        fig_default_params,
+        fig_idx,
+        fig,
+        ax,
+        ):
     analysis_style = {'description_width': '200px'}
     layout = Layout(width="98%")
     simulation_names = tuple(data['simulations'].keys())
@@ -644,7 +651,28 @@ def _get_ax_control(widgets, data, fig_default_params, fig_idx, fig, ax):
             0  # Default value if no such simulation is found
         )
 
+    # # Convert to a set for faster lookup
+    # loaded_data = set(data["uploaded_data"].keys())
+
+    # simulations_only = [
+    #     sim_name for sim_name in simulation_names if sim_name not in loaded_data
+    # ]
+
+    # if not simulations_only:
+    #     simulations_only = ["None"]
+    #     selected_value = "None"
+    # else:
+    #     if simulation_names[sim_index] in simulations_only:
+    #         selected_value = simulation_names[sim_index]
+    #     else:
+    #         selected_value = simulations_only[0]
+
+    # logger.debug(f'Check {data.keys()}')
+    # logger.info(f'Sims: {simulations_only}')
+
     simulation_selection = Dropdown(
+        # options=simulations_only,
+        # value=selected_value,
         options=simulation_names,
         value=simulation_names[sim_index],
         description='Simulation Data:',
@@ -662,12 +690,12 @@ def _get_ax_control(widgets, data, fig_default_params, fig_idx, fig, ax):
         style=analysis_style,
     )
 
-    tagert_names = simulation_names[:-1]
+    target_names = simulation_names[:-1]
     if len(simulation_names) > 1:
-        tagert_names = simulation_names[1:]
+        target_names = simulation_names[1:]
 
     target_data_selection = Dropdown(
-        options=tagert_names + ('None',),
+        options=target_names + ('None',),
         value='None',
         description='Data to Compare:',
         disabled=False,
@@ -971,7 +999,13 @@ class _VizManager:
         A dict of external simulation data object
     """
 
-    def __init__(self, gui_data, viz_layout, fig_default_params):
+    def __init__(
+            self,
+            gui_data,
+            gui_uploaded_data,
+            viz_layout,
+            fig_default_params
+            ):
         plt.close("all")
         self.viz_layout = viz_layout
         self.fig_default_params = fig_default_params
@@ -1018,6 +1052,7 @@ class _VizManager:
         self.fig_idx = {"idx": 1}
         self.figs = {}
         self.gui_data = gui_data
+        self.gui_uploaded_data = gui_uploaded_data
 
     @property
     def widgets(self):
@@ -1035,6 +1070,7 @@ class _VizManager:
         return {
             "use_ipympl": self.use_ipympl,
             "simulations": self.gui_data["simulation_data"],
+            "uploaded_data": self.gui_uploaded_data,
             "fig_idx": self.fig_idx,
             "visualization_output": self.viz_layout['visualization_output'],
             "figs": self.figs
@@ -1224,7 +1260,11 @@ class _VizManager:
 
         # Select the simulation
         simulation_selector = ax_control_tabs.children[ax_idx].children[1]
-        simulation_selector.value = simulation_name
+
+        if simulation_name in simulation_selector.options:
+            simulation_selector.value = simulation_name
+        else:
+            simulation_selector.value = simulation_selector.options[0]
 
         # Select the plot type
         plot_type_selector = ax_control_tabs.children[ax_idx].children[0]
