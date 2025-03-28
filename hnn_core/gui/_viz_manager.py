@@ -25,6 +25,7 @@ _plot_types = [
     'layer5 dipole',
     'input histogram',
     'spikes',
+    'spikes with dipoles',
     'PSD',
     'layer2/3 PSD',
     'layer5 PSD',
@@ -36,10 +37,16 @@ _no_overlay_plot_types = [
     'network',
     'spectrogram',
     'spikes',
+    'spikes with dipoles',
     'input histogram',
 ]
 
-_ext_data_disabled_plot_types = ['spikes', 'input histogram', 'network']
+_ext_data_disabled_plot_types = [
+    'spikes',
+    'spikes with dipoles',
+    'input histogram',
+    'network'
+    ]
 
 _spectrogram_color_maps = [
     "viridis",
@@ -112,12 +119,12 @@ data_templates = {
         "mosaic": "00\n11",
         "ax_plots": [("ax0", "current dipole"), ("ax1", "spectrogram")]
     },
-    "Dipole-Spikes (2x1)": {
+    "Dipole Layers-Spikes (1x1)": {
         "kwargs": {
-            "gridspec_kw": {"height_ratios": [1, 1]}
+            "gridspec_kw": ""
         },
-        "mosaic": "00\n11",
-        "ax_plots": [("ax0", "current dipole"), ("ax1", "spikes")]
+        "mosaic": "00\n00",
+        "ax_plots": [("ax0", "spikes with dipoles")]
     },
     "Drive-Dipole-Spectrogram (3x1)": {
         "kwargs": {
@@ -142,18 +149,56 @@ data_templates = {
 
 
 def check_sim_plot_types(
-        new_sim_name, plot_type_selection, target_selection, data):
+        new_sim_name,
+        plot_type_selection,
+        target_selection,
+        data,
+    ):
+
+    logger.info(
+        '[FXN] check_sim_plot_types\n'
+    )
+
     if not _is_simulation(data["simulations"][new_sim_name]):
         plot_type_selection.options = [
             pt for pt in _plot_types if pt not in _ext_data_disabled_plot_types
         ]
     else:
         plot_type_selection.options = _plot_types
+
     # deal with target data
     all_possible_targets = list(data["simulations"].keys())
-    all_possible_targets.remove(new_sim_name)
-    target_selection.options = all_possible_targets + ['None']
-    target_selection.value = 'None'
+
+    logger.info(
+        f'data["simulations"].keys(): {data["simulations"].keys()}\n'
+        f'data["uploaded_data"].keys(): {data["uploaded_data"].keys()}\n'
+    )
+
+    # If the data are for a new simulation, do not expose the simulation data
+    # in the 'Data to Compare' dropdown
+    if new_sim_name not in data['uploaded_data']:
+        all_possible_targets.remove(new_sim_name)
+
+    # If the 'new simulation' is actually loaded data, then the 'Data to 
+    # Compare' dropdown should default to the name of the loaded data
+    if new_sim_name in data['uploaded_data']:
+        target_selection.value = new_sim_name
+    # In all other cases, the default value for the 'Data to Compare' dropdown
+    # should be 'None'
+    else:
+        target_selection.value = 'None'
+
+    # Ensure the 'None' option is always available but never duplicated in
+    # re-instantiating the options for 'Data to Compare'
+    if 'None' not in all_possible_targets:
+        target_selection.options = all_possible_targets + ['None']
+    else:
+        target_selection.options = all_possible_targets
+
+    logger.info(
+        f'target_selection.options: {target_selection.options}\n'
+        f'target_selections.value: {target_selection.value}'
+    )
 
 
 def _check_template_type_is_data_dependant(template_name):
@@ -161,13 +206,20 @@ def _check_template_type_is_data_dependant(template_name):
     return template_name in sim_data_options
 
 
-def target_comparison_change(new_target_name, simulation_selection, data):
+def target_comparison_change(
+        new_target_name,
+        simulation_selection,
+        data,
+    ):
     """Triggered when the target data is turned on or changed.
     """
     pass
 
 
-def plot_type_coupled_change(new_plot_type, target_data_selection):
+def plot_type_coupled_change(
+        new_plot_type,
+        target_data_selection,
+    ):
     if new_plot_type != 'current dipole':
         target_data_selection.disabled = True
     else:
@@ -214,7 +266,14 @@ def _figname2idx(fname):
     return int(fname.split(" ")[-1])
 
 
-def _update_ax(fig, ax, single_simulation, sim_name, plot_type, plot_config):
+def _update_ax(
+        fig,
+        ax,
+        single_simulation,
+        sim_name,
+        plot_type,
+        plot_config
+    ):
     """Refresh plots with simulation_data.
 
     Parameters
@@ -230,6 +289,12 @@ def _update_ax(fig, ax, single_simulation, sim_name, plot_type, plot_config):
     plot_config : dict
         A dict that specifies the preprocessing and style of plots.
     """
+
+    logger.info(
+        'CHECK SINGLE SIMULATION:\n'
+        f'single_simulation: {single_simulation}'
+    )
+
     # Make sure that visualization does not change the original data
     dpls_copied = copy.deepcopy(single_simulation['dpls'])
     net_copied = copy.deepcopy(single_simulation['net'])
@@ -257,6 +322,20 @@ def _update_ax(fig, ax, single_simulation, sim_name, plot_type, plot_config):
                 show=False,
                 show_legend=show_legend,
                 marker_size=marker_size,
+            )
+
+    if plot_type == "spikes with dipoles":
+        if net_copied.cell_response:
+            marker_size = plot_config['marker_size']
+            hide_spike_legend = plot_config['hide_spike_legend']
+            show_legend = True if hide_spike_legend == 'False' else False
+            net_copied.cell_response.plot_spikes_raster(
+                ax=ax,
+                show=False,
+                show_legend=show_legend,
+                marker_size=marker_size,
+                overlay_dipoles=True,
+                dpl=dpls_copied,
             )
 
     elif plot_type == 'input histogram':
@@ -375,6 +454,9 @@ def _update_ax(fig, ax, single_simulation, sim_name, plot_type, plot_config):
                                  'or shorter wavelets. No spectrogram will be '
                                  'plotted.')
 
+###############################################################################
+###############################################################################
+
     elif 'dipole' in plot_type:
         if len(dpls_copied) > 0:
             if len(dpls_copied) > 1:
@@ -460,14 +542,27 @@ def _avg_dipole_check(dpls):
     return dpl
 
 
-def _plot_on_axes(b, simulations_widget, widgets_plot_type,
-                  data_widget,
-                  spectrogram_colormap_selection,
-                  hide_spike_legend,
-                  marker_size,
-                  min_spectral_frequency, max_spectral_frequency,
-                  dipole_smooth, dipole_scaling, data_smooth, data_scaling,
-                  widgets, data, fig_idx, fig, ax, existing_plots):
+def _plot_on_axes(
+        b,
+        simulations_widget, 
+        widgets_plot_type,
+        data_widget,
+        spectrogram_colormap_selection,
+        hide_spike_legend,
+        marker_size,
+        min_spectral_frequency,
+        max_spectral_frequency,
+        dipole_smooth,
+        dipole_scaling,
+        data_smooth,
+        data_scaling,
+        widgets,
+        data,
+        fig_idx,
+        fig,
+        ax,
+        existing_plots
+    ):
     """Plotting different types of data on the given axes.
 
     Now this function is also responsible for comparing multiple simulations,
@@ -511,7 +606,7 @@ def _plot_on_axes(b, simulations_widget, widgets_plot_type,
     existing_plots : ipywidgets.VBox
         A VBox widget that contains all the existing plots.
     """
-    sim_name = simulations_widget.value
+
     plot_type = widgets_plot_type.value
     # disable add plots for types that do not support overlay
     if plot_type in _no_overlay_plot_types:
@@ -520,7 +615,43 @@ def _plot_on_axes(b, simulations_widget, widgets_plot_type,
     # freeze plot type
     widgets_plot_type.disabled = True
 
+###############################################################################
+###############################################################################
+# NOTES HERE
+# if sim_name is None, we need to get the value of the loaded data from the
+# widget
+#
+# simulations_widget should always allow for a None option which is not 
+# currently the case
+#
+# need data_widget to pass the loaded data value here. data_widget is set
+# from target_data_selection
+
+    logger.info(
+        'KEY POINT OF CHECK FOR LOADING DATA FIRST\n'
+        f'  simulations_widget.value: {simulations_widget.value}\n'
+        f'  data_widget.value: {data_widget.value}\n'
+    )
+
+    if simulations_widget.value == 'None':
+        if data_widget.value != 'None':
+            sim_name = data_widget.value
+    else:
+        sim_name = simulations_widget.value
+
+    logger.info(
+        f'sim_name: {sim_name}'
+    )
+
     single_simulation = data['simulations'][sim_name]
+
+    logger.info(
+        f'single_simulation: {single_simulation}'
+        f'\ndata_widget: {data_widget.value}'
+    )
+
+    # data['uploaded_data'][]
+
     simulation_plot_config = {
         "dipole_scaling": dipole_scaling.value,
         "dipole_smooth": dipole_smooth.value,
@@ -530,65 +661,103 @@ def _plot_on_axes(b, simulations_widget, widgets_plot_type,
         "hide_spike_legend": hide_spike_legend.value,
         "marker_size": marker_size.value,
     }
+    
+    logger.info(
+        'Running _update_ax() in plot_on_axes\n'
+        'Passing variables: \n'
+        f'                    fig: {fig}\n'
+        f'                     ax: {ax}\n'
+        f'      single_simulation: {single_simulation}\n'
+        f'               sim_name: {sim_name}\n'
+        f'              plot_type: {plot_type}\n'
+        f'  simulation_plot_config: {simulation_plot_config}\n'
+    )
 
-    dpls_processed = _update_ax(fig, ax, single_simulation, sim_name,
-                                plot_type, simulation_plot_config)
+    dpls_processed = _update_ax(
+        fig,
+        ax,
+        single_simulation,
+        sim_name,
+        plot_type,
+        simulation_plot_config
+    )
 
     # If target_simulations is not None and we are plotting a dipole,
-    # we need to plot the target dipole as well.
+    # we need to plot the target dipole as well. However, in the case of 
+    # plotting only loaded data, we should not plot the 'target' dipole, as 
+    # we would be plotting the data twice
+
     if data_widget.value in data['simulations'].keys(
     ) and plot_type == 'current dipole':
 
         target_sim_name = data_widget.value
-        target_sim = data['simulations'][target_sim_name]
-        data_plot_config = {
-            "dipole_scaling": data_scaling.value,
-            "dipole_smooth": data_smooth.value,
-            "min_spectral_frequency": min_spectral_frequency.value,
-            "max_spectral_frequency": max_spectral_frequency.value,
-            "spectrogram_cm": spectrogram_colormap_selection.value,
-            "hide_spike_legend": hide_spike_legend.value,
-            "marker_size": marker_size.value,
-        }
 
-        # plot the target dipole.
-        target_dpl_processed = _update_ax(
-            fig, ax, target_sim, target_sim_name, plot_type,
-            data_plot_config)[0]  # we assume there is only one dipole.
+        if sim_name != target_sim_name:
+            target_sim = data['simulations'][target_sim_name]
+            data_plot_config = {
+                "dipole_scaling": data_scaling.value,
+                "dipole_smooth": data_smooth.value,
+                "min_spectral_frequency": min_spectral_frequency.value,
+                "max_spectral_frequency": max_spectral_frequency.value,
+                "spectrogram_cm": spectrogram_colormap_selection.value,
+                "hide_spike_legend": hide_spike_legend.value,
+                "marker_size": marker_size.value,
+            }
 
-        # calculate the RMSE between the two dipoles.
-        t0 = 0.0
-        tstop = dpls_processed[-1].times[-1]
-        if len(dpls_processed) > 1:
-            dpl = _avg_dipole_check(dpls_processed)
-        else:
-            dpl = dpls_processed
-        rmse = _rmse(dpl, target_dpl_processed, t0, tstop)
-        annotation_text = f'RMSE({sim_name}, {target_sim_name}): {rmse:.4f}'
+            # plot the target dipole.
+            logger.info(
+                'Running _update_ax() to plot the target dipole\n'
+                'Passing variables: \n'
+                f'               fig: {fig}\n'
+                f'                ax: {ax}\n'
+                f'        target_sim: {target_sim}\n'
+                f'   target_sim_name: {target_sim_name}\n'
+                f'         plot_type: {plot_type}\n'
+                f'  data_plot_config: {data_plot_config}\n'
+            )
 
-        # find subplot's annotation
-        annotation = next((child for child in ax.get_children()
-                           if isinstance(child, plt.Annotation)), None)
+            target_dpl_processed = _update_ax(
+                fig,
+                ax,
+                target_sim,
+                target_sim_name,
+                plot_type,
+                data_plot_config,
+            )[0]  # we assume there is only one dipole.
 
-        # if the subplot already has an annotation, update its text.
-        # Otherwise, create a new one.
-        if annotation is not None:
-            annotation.set_text(annotation_text)
-        else:
-            ax.annotate(annotation_text,
-                        xy=(0.95, 0.05),
-                        xycoords='axes fraction',
-                        horizontalalignment='right',
-                        verticalalignment='bottom',
-                        fontsize=12)
+            # calculate the RMSE between the two dipoles.
+            t0 = 0.0
+            tstop = dpls_processed[-1].times[-1]
+            if len(dpls_processed) > 1:
+                dpl = _avg_dipole_check(dpls_processed)
+            else:
+                dpl = dpls_processed
+            rmse = _rmse(dpl, target_dpl_processed, t0, tstop)
+            annotation_text = f'RMSE({sim_name}, {target_sim_name}): {rmse:.4f}'
 
-        rmse_logger_text = (f'RMSE {rmse:.4f} ('
-                            f'{sim_name} smooth:{dipole_smooth.value} '
-                            f'scale:{dipole_scaling.value} \n'
-                            f'{target_sim_name} smooth:{data_smooth.value} '
-                            f'scale:{data_scaling.value})')
+            # find subplot's annotation
+            annotation = next((child for child in ax.get_children()
+                            if isinstance(child, plt.Annotation)), None)
 
-        logger.info(rmse_logger_text)
+            # if the subplot already has an annotation, update its text.
+            # Otherwise, create a new one.
+            if annotation is not None:
+                annotation.set_text(annotation_text)
+            else:
+                ax.annotate(annotation_text,
+                            xy=(0.95, 0.05),
+                            xycoords='axes fraction',
+                            horizontalalignment='right',
+                            verticalalignment='bottom',
+                            fontsize=12)
+
+            rmse_logger_text = (f'RMSE {rmse:.4f} ('
+                                f'{sim_name} smooth:{dipole_smooth.value} '
+                                f'scale:{dipole_scaling.value} \n'
+                                f'{target_sim_name} smooth:{data_smooth.value} '
+                                f'scale:{data_scaling.value})')
+
+            logger.info(rmse_logger_text)
 
     existing_plots.children = (*existing_plots.children,
                                Label(f"{sim_name}: {plot_type}"))
@@ -650,31 +819,57 @@ def _get_ax_control(
              if _is_simulation(data["simulations"][sim_name])),
             0  # Default value if no such simulation is found
         )
+    logger.info(
+        f'simulation_names: {simulation_names}'
+        f'\ntype(simulation_names): {type(simulation_names)}'
+        f'\nsim_index: {sim_index}'
+        f'\ntype(sim_index): {type(sim_index)}'
+    )
 
-    # # Convert to a set for faster lookup
-    # loaded_data = set(data["uploaded_data"].keys())
+    # get loaded data
+    loaded_data = data["uploaded_data"].keys()
+    logger.info(f'loaded_data: {loaded_data}')
 
-    # simulations_only = [
-    #     sim_name for sim_name in simulation_names if sim_name not in loaded_data
-    # ]
+    simulations_only = [
+        sim_name for sim_name in simulation_names if sim_name not in loaded_data
+    ]
 
-    # if not simulations_only:
-    #     simulations_only = ["None"]
-    #     selected_value = "None"
-    # else:
-    #     if simulation_names[sim_index] in simulations_only:
-    #         selected_value = simulation_names[sim_index]
-    #     else:
-    #         selected_value = simulations_only[0]
+    sim_only_index = [
+        i for i, sim_name in enumerate(simulation_names) if sim_name not in loaded_data
+    ]
+
+    if not simulations_only:
+        simulations_only = ("None",)
+        sim_only_index = 0
+    else:
+        sim_only_index = len(sim_only_index)-1
+        simulations_only = tuple(simulations_only) + ('None',)
+    
+    target_names = tuple(list(loaded_data)) + ('None',)
+
+    logger.info(
+        f'simulations_only: {simulations_only}\n'
+        f'sim_only_index: {sim_only_index}\n'
+        f'target_names: {target_names}\n'
+    )
+
+    t1 = simulations_only == simulation_names
+    t2 = sim_only_index == sim_index
+    logger.info(
+        'Sanity checks:'
+        f'\n   {t1}'
+        f'\n   {t2}'
+    )
 
     # logger.debug(f'Check {data.keys()}')
     # logger.info(f'Sims: {simulations_only}')
+    # logger.infl(f'Sim_only_index: {sim_only_index}')
 
     simulation_selection = Dropdown(
-        # options=simulations_only,
-        # value=selected_value,
-        options=simulation_names,
-        value=simulation_names[sim_index],
+        # options=simulation_names,
+        # value=simulation_names[sim_index],
+        options=simulations_only,
+        value=simulations_only[sim_only_index],
         description='Simulation Data:',
         disabled=False,
         layout=layout,
@@ -690,12 +885,12 @@ def _get_ax_control(
         style=analysis_style,
     )
 
-    target_names = simulation_names[:-1]
-    if len(simulation_names) > 1:
-        target_names = simulation_names[1:]
+    # target_names = simulation_names[:-1]
+    # if len(simulation_names) > 1:
+    #     target_names = simulation_names[1:]
 
     target_data_selection = Dropdown(
-        options=target_names + ('None',),
+        options=target_names,
         value='None',
         description='Data to Compare:',
         disabled=False,
@@ -707,7 +902,10 @@ def _get_ax_control(
     # for the specific sim name in the simulation_selection dropdown options
     check_sim_plot_types(
         simulation_names[sim_index],
-        plot_type_selection, target_data_selection, data)
+        plot_type_selection,
+        target_data_selection,
+        data
+    )
 
     spectrogram_colormap_selection = Dropdown(
         description='Spectrogram Colormap:',
@@ -771,7 +969,7 @@ def _get_ax_control(
     )
 
     marker_size = BoundedFloatText(
-        value=1,
+        value=5,
         min=0.01,
         max=15,
         description='Raster Plot Marker Size:',
@@ -785,16 +983,40 @@ def _get_ax_control(
     clear_button = Button(description='Clear axis')
 
     def _on_sim_data_change(new_sim_name):
+
+        logger.info(
+            'Running _on_sim_data_change'
+        )
+
         return check_sim_plot_types(
-            new_sim_name.new, plot_type_selection, target_data_selection, data)
+            new_sim_name.new,
+            plot_type_selection,
+            target_data_selection,
+            data
+        )
 
     def _on_target_comparison_change(new_target_name):
-        return target_comparison_change(new_target_name, simulation_selection,
-                                        data)
+
+        logger.info(
+            'Running _on_target_comparison_change'
+        )
+
+        return target_comparison_change(
+            new_target_name,
+            simulation_selection,
+            data,
+        )
 
     def _on_plot_type_change(new_plot_type):
-        return plot_type_coupled_change(new_plot_type.new,
-                                        target_data_selection)
+
+        logger.info(
+            'Running _on_plot_type_change'
+        )
+
+        return plot_type_coupled_change(
+            new_plot_type.new,
+            target_data_selection
+        )
 
     simulation_selection.observe(_on_sim_data_change, 'value')
     target_data_selection.observe(_on_target_comparison_change, 'value')
@@ -812,6 +1034,16 @@ def _get_ax_control(
             existing_plots=existing_plots,
             add_plot_button=plot_button,
         ))
+
+###############################################################################
+# Notes
+# 
+# Need to pass the correct values for target_data_selection here
+
+    logger.info(
+        '[TRACE] Initiating plot_button.on_click\n'
+        f'  target_data_selection: {target_data_selection}'
+    )
 
     plot_button.on_click(
         partial(
@@ -836,18 +1068,31 @@ def _get_ax_control(
             existing_plots=existing_plots,
         ))
 
-    vbox = VBox([
-        plot_type_selection, simulation_selection, simulation_dipole_smooth,
-        simulation_dipole_scaling, target_data_selection, data_dipole_smooth,
-        data_dipole_scaling, min_spectral_frequency, max_spectral_frequency,
-        spectrogram_colormap_selection,
-        hide_spike_legend,
-        marker_size,
-        HBox(
-            [plot_button, clear_button],
-            layout=Layout(justify_content='space-between'),
-        ), existing_plots], layout=Layout(width="98%"))
-
+    vbox = VBox(
+        [
+            plot_type_selection,
+            simulation_selection,
+            simulation_dipole_smooth,
+            simulation_dipole_scaling,
+            target_data_selection,
+            data_dipole_smooth,
+            data_dipole_scaling,
+            min_spectral_frequency,
+            max_spectral_frequency,
+            spectrogram_colormap_selection,
+            hide_spike_legend,
+            marker_size,
+            HBox(
+                [
+                    plot_button,
+                    clear_button
+                ],
+                layout=Layout(justify_content='space-between'),
+            ),
+            existing_plots,
+        ],
+        layout=Layout(width="98%"),
+    )
     return vbox
 
 

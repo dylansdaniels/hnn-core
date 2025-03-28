@@ -1232,3 +1232,76 @@ def test_default_frequencies(setup_gui):
 
     assert gui_min == viz_min == new_min
     assert gui_max == viz_max == new_max
+
+###############################################################################
+def test_01(setup_gui):
+
+    gui = setup_gui
+
+    assert len(gui.viz_manager.data['figs']) == 0
+    assert len(gui.data['simulation_data']) == 0
+
+    # Formulate path to the file
+    file_path = assets_path / 'test_default.csv'
+    absolute_path = str(file_path.resolve())
+    file_url = 'file://' + absolute_path
+
+    # upload file
+    _ = gui._simulate_upload_data(file_url)
+
+    # we are loading only 1 trial,
+    data_lengh = (
+        len(gui.data['simulation_data']['test_default']['dpls'][0].times))
+
+    # assert len(gui.data['simulation_data']) == 1  # failed check
+
+    assert 'test_default' in gui.data['simulation_data'].keys()
+
+    assert gui.data['simulation_data']['test_default']['net'] is None
+
+    assert type(gui.data['simulation_data']['test_default']['dpls']) is list
+
+    assert len(gui.viz_manager.data['figs']) == 1
+
+    assert (len(gui.data['simulation_data']['test_default']
+                ['dpls'][0].data['agg']) == data_lengh)
+    
+    assert (len(gui.data['simulation_data']['test_default']
+                ['dpls'][0].data['L2']) == data_lengh)
+    
+    assert (len(gui.data['simulation_data']['test_default']
+                ['dpls'][0].data['L5']) == data_lengh)
+
+    assert 'dpls' in gui.data['simulation_data']['test_default'].keys()
+
+
+def test_02(setup_gui):
+
+    gui = setup_gui
+
+    assert len(gui.viz_manager.data['figs']) == 0
+    assert len(gui.data['simulation_data']) == 0
+
+    # Formulate path to the file
+    file_path = assets_path / 'test_default.csv'
+    absolute_path = str(file_path.resolve())
+    file_url = 'file://' + absolute_path
+
+    # upload file
+    _ = gui._simulate_upload_data(file_url)
+
+    assert len(gui.viz_manager.data['figs']) == 1
+
+    gui.widget_tstop.value = 70
+    gui.widget_dt.value = 0.5
+    gui.widget_backend_selection.value = "Joblib"
+    gui.widget_ntrials.value = 1
+    gui.run_button.click()
+
+    default_name = gui.widget_simulation_name.value
+    dpls = gui.simulation_data[default_name]['dpls']
+
+    assert isinstance(gui.simulation_data[default_name]["net"], Network)
+    assert all([isinstance(dpl, Dipole) for dpl in dpls])
+
+    plt.close('all')
