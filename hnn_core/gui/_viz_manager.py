@@ -1104,7 +1104,6 @@ class _VizManager:
                     align_items='stretch',
                 ),
             ),
-            Label("Figure config:"),
             self.axes_config_output,
         ])
         return config_panel, fig_output_container

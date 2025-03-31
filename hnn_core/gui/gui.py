@@ -289,37 +289,68 @@ class HNNGUI:
             "dpi": dpi,
             "header_height": f"{header_height}px",
             "theme_color": theme_color,
-            "btn": Layout(height=f"{button_height}px", width='auto'),
-            "run_btn": Layout(height=f"{button_height}px", width='10%'),
-            "btn_full_w": Layout(height=f"{button_height}px", width='100%'),
-            "del_fig_btn": Layout(height=f"{button_height}px", width='auto'),
-            "log_out": Layout(border='1px solid gray',
-                              height=f"{log_window_height - 10}px",
-                              overflow='auto'),
-            "viz_config": Layout(width='99%'),
-            "simulations_list": Layout(width=f'{left_sidebar_width - 50}px'),
+            "btn": Layout(
+                height=f"{button_height}px", width='auto'
+            ),
+            "run_btn": Layout(
+                height=f"{button_height}px", width='10%'
+            ),
+            "btn_full_w": Layout(
+                height=f"{button_height}px",
+                width='100%'
+            ),
+            "del_fig_btn": Layout(
+                height=f"{button_height}px",
+                width='auto'
+            ),
+            "log_out": Layout(
+                border='1px solid lightgrey',
+                height=f"{log_window_height - 10}px",
+                margin="0px 0px 20px 0px",
+                overflow='auto',
+            ),
+            "viz_config": Layout(
+                width='99%'
+            ),
+            "simulations_list": Layout(
+                width=f'{left_sidebar_width - 50}px'
+            ),
             "visualization_window": Layout(
                 width=f"{viz_win_width - 10}px",
                 height=f"{main_content_height - 10}px",
+                margin="0px 0px 0px 10px",
                 border='1px solid gray',
-                overflow='scroll'),
+                overflow='scroll'
+            ),
             "visualization_output": Layout(
                 width=f"{viz_win_width - 50}px",
                 height=f"{main_content_height - 100}px",
                 border='1px solid gray',
-                overflow='scroll'),
-            "left_sidebar": Layout(width=f"{left_sidebar_width}px",
-                                   height=f"{main_content_height}px"),
-            "left_tab": Layout(width=f"{left_sidebar_width}px",
-                               height=f"{config_box_height}px"),
-            "operation_box": Layout(width=f"{left_sidebar_width}px",
-                                    height=f"{operation_box_height}px",
-                                    flex_wrap="wrap",
-                                    ),
-            "config_box": Layout(width=f"{left_sidebar_width - 40}px",
-                                 height=f"{config_box_height - 100}px"),
-            "drive_widget": Layout(width="auto"),
-            "drive_textbox": Layout(width='270px', height='auto'),
+                overflow='scroll'
+            ),
+            "left_sidebar": Layout(
+                width=f"{left_sidebar_width}px",
+                height=f"{main_content_height}px",
+            ),
+            "left_tab": Layout(
+                width=f"{left_sidebar_width}px",
+                height=f"{config_box_height}px",
+            ),
+            "operation_box": Layout(
+                width=f"{left_sidebar_width}px",
+                height=f"{operation_box_height}px",
+                flex_wrap="wrap",
+            ),
+            "config_box": Layout(
+                width=f"{left_sidebar_width - 55}px",
+                height=f"{config_box_height - 100}px",
+            ),
+            "drive_widget": Layout(
+                width="auto"
+            ),
+            "drive_textbox": Layout(
+                width='270px', height='auto'
+            ),
             # simulation status related
             "simulation_status_height": f"{status_height}px",
             "simulation_status_common": "background:gray;padding-left:10px",
@@ -792,9 +823,13 @@ class HNNGUI:
         simulation_box = VBox([
             HTML(f"<div {box_style}>Simulation Parameters</div>"),
             VBox([
-                self.widget_simulation_name, self.widget_tstop, self.widget_dt,
+                self.widget_simulation_name,
+                self.widget_tstop,
+                self.widget_dt,
                 self.widget_ntrials,
-                self.widget_backend_selection, self._backend_config_out]),
+                self.widget_backend_selection,
+                self._backend_config_out
+            ]),
             Box(layout=Layout(height="20px")),
             HTML(
                 f"<div {box_style}'>Default Visualization Parameters</div>",
@@ -805,11 +840,15 @@ class HNNGUI:
                 self.widget_min_frequency,
                 self.widget_max_frequency,
             ])
-        ], layout=self.layout['config_box'])
+        ], layout=self.layout['config_box']).add_class('simulation-box')
+
         # Displays the default backend options
-        handle_backend_change(self.widget_backend_selection.value,
-                              self._backend_config_out, self.widget_mpi_cmd,
-                              self.widget_n_jobs)
+        handle_backend_change(
+            self.widget_backend_selection.value,
+            self._backend_config_out,
+            self.widget_mpi_cmd,
+            self.widget_n_jobs
+        )
 
         connectivity_configuration = Tab()
 
@@ -819,9 +858,10 @@ class HNNGUI:
         ])
 
         cell_parameters = VBox([
-            HBox([self.cell_type_radio_buttons,
-                  self.cell_layer_radio_buttons]),
-            self._cell_params_out
+            HBox([
+                self.cell_type_radio_buttons,
+                self.cell_layer_radio_buttons
+            ]), self._cell_params_out
         ])
 
         connectivity_configuration.children = [connectivity_box,
@@ -847,26 +887,46 @@ class HNNGUI:
         # Tabs for left pane
         left_tab = Tab()
         left_tab.children = [
-            simulation_box, connectivity_configuration, drives_options,
+            simulation_box,
+            connectivity_configuration,
+            drives_options,
             config_panel,
         ]
-        titles = ('Simulation', 'Network', 'External drives',
-                  'Visualization')
+        titles = (
+            'Simulation',
+            'Network',
+            'External drives',
+            'Visualization',
+        )
         for idx, title in enumerate(titles):
             left_tab.set_title(idx, title)
+            left_tab.add_class("custom-left-tab")
+
+        # For visualization_window, add 10px to the pane_width to account for
+        # the offset on the left margin. This effectively reduces the width
+        viz_margin_width = 10
+        viz_window_width = int(
+            self.layout['visualization_window'].width.replace("px", "")
+        ) + viz_margin_width
+        viz_window_width = f"{viz_window_width}px"
 
         self.app_layout = AppLayout(
             header=self._header,
             left_sidebar=VBox([
-                VBox([left_tab], layout=self.layout['left_tab']),
+                VBox(
+                    [left_tab],
+                    layout=self.layout['left_tab']
+                ),
                 self._operation_buttons,
                 self._log_window,
-            ], layout=self.layout['left_sidebar']),
+            ], 
+            layout=self.layout['left_sidebar']),
             right_sidebar=figs_output,
             footer=self._simulation_status_bar,
             pane_widths=[
-                self.layout['left_sidebar'].width, '0px',
-                self.layout['visualization_window'].width
+                self.layout['left_sidebar'].width, 
+                '0px',
+                viz_window_width,
             ],
             pane_heights=[
                 self.layout['header_height'],
@@ -874,6 +934,28 @@ class HNNGUI:
                 self.layout['simulation_status_height']
             ],
         )
+
+        # self.app_layout.left_sidebar.add_class("custom-left-sidebar")
+
+        scrollbar_gutter = HTML("""
+        <style>
+            .widget-box.widget-vbox {
+                overflow-y: auto;
+                scrollbar-gutter: stable;
+            }
+        </style>
+                """)
+        display(scrollbar_gutter)
+
+        left_tab_style = HTML("""
+        <style>
+            .custom-left-tab .widget-tab-contents {
+                background: red !important;
+                background: white !important;
+            }
+        </style>
+        """)
+        display(left_tab_style)
 
         self._link_callbacks()
 
