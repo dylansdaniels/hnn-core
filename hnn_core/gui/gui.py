@@ -263,7 +263,7 @@ class HNNGUI:
         in the network.
     """
 
-    def __init__(self, theme_color="#802989",
+    def __init__(self, theme_color="#88548c",
                  total_height=800,
                  total_width=1300,
                  header_height=50,
@@ -283,8 +283,7 @@ class HNNGUI:
         viz_win_width = self.total_width - left_sidebar_width
         main_content_height = self.total_height - status_height
 
-        config_box_height = main_content_height - (log_window_height +
-                                                   operation_box_height)
+        config_box_height = main_content_height - (log_window_height)
         self.layout = {
             "dpi": dpi,
             "header_height": f"{header_height}px",
@@ -305,8 +304,8 @@ class HNNGUI:
             ),
             "log_out": Layout(
                 border='1px solid lightgrey',
-                height=f"{log_window_height - 10}px",
-                margin="0px 0px 20px 0px",
+                height=f"{log_window_height}px",
+                margin="10px 0px 10px 0px",
                 overflow='auto',
             ),
             "viz_config": Layout(
@@ -320,7 +319,7 @@ class HNNGUI:
                 height=f"{main_content_height - 10}px",
                 margin="0px 0px 0px 10px",
                 border='1px solid gray',
-                overflow='scroll'
+                # overflow='scroll',
             ),
             "visualization_output": Layout(
                 width=f"{viz_win_width - 50}px",
@@ -330,11 +329,18 @@ class HNNGUI:
             ),
             "left_sidebar": Layout(
                 width=f"{left_sidebar_width}px",
-                height=f"{main_content_height}px",
+                height=f"{main_content_height-10}px",
+                # border="1px solid red",  # debug
+                justify_content="space-between",
+                # display="flex",
+                # flex_direction="column",
             ),
             "left_tab": Layout(
                 width=f"{left_sidebar_width}px",
-                height=f"{config_box_height}px",
+                # height=f"{config_box_height}px",
+                flex="1",
+                overflow="hidden",
+                # border="1px solid red",  # debug
             ),
             "operation_box": Layout(
                 width=f"{left_sidebar_width}px",
@@ -343,7 +349,11 @@ class HNNGUI:
             ),
             "config_box": Layout(
                 width=f"{left_sidebar_width - 55}px",
-                height=f"{config_box_height - 100}px",
+                # height=f"{config_box_height - 100}px",
+                height="100%",
+                flex="1",
+                # border="1px solid blue",  # debug
+                # overflow="hidden"
             ),
             "drive_widget": Layout(
                 width="auto"
@@ -469,7 +479,7 @@ class HNNGUI:
             button_style='success')
 
         # Create save simulation widget wrapper
-        self.save_simuation_button = self._init_html_download_button(
+        self.save_simulation_button = self._init_html_download_button(
             title='Save Simulation', mimetype='text/csv')
         self.save_config_button = self._init_html_download_button(
             title='Save Network', mimetype='application/json')
@@ -482,14 +492,14 @@ class HNNGUI:
         self.widget_drive_type_selection = Dropdown(
             options=['Evoked', 'Poisson', 'Rhythmic', 'Tonic'],
             value='Evoked',
-            description='Drive type:',
+            description='Drive Type:',
             disabled=False,
             layout=self.layout['drive_widget'],
             style={'description_width': '100px'}
         )
         self.widget_location_selection = Dropdown(
             options=['Proximal', 'Distal'], value='Proximal',
-            description='Drive location:', disabled=False,
+            description='Drive Location:', disabled=False,
             layout=self.layout['drive_widget'],
             style={'description_width': '100px'},
         )
@@ -505,8 +515,9 @@ class HNNGUI:
         self.load_connectivity_button = FileUpload(
             accept='.json', multiple=False,
             style={'button_color': self.layout['theme_color']},
-            description='Load local network connectivity',
+            description='Load Local Network Connectivity',
             layout=self.layout['btn_full_w'], button_style='success')
+        
         self.load_drives_button = FileUpload(
             accept='.json', multiple=False,
             style={'button_color': self.layout['theme_color']},
@@ -519,7 +530,7 @@ class HNNGUI:
 
         self.cell_type_radio_buttons = RadioButtons(
             options=['L2/3 Pyramidal', 'L5 Pyramidal'],
-            description='Cell type:')
+            description='Cell Type:')
 
         self.cell_layer_radio_buttons = RadioButtons(
             options=['Geometry', 'Synapses', 'Biophysics'],
@@ -614,12 +625,17 @@ class HNNGUI:
             value=self._simulation_status_contents['not_running'])
 
         self._log_window = HBox([self._log_out], layout=self.layout['log_out'])
+
         self._operation_buttons = HBox(
-            [self.run_button, self.load_data_button,
-             self.save_config_button,
-             self.save_simuation_button,
-             self.simulation_list_widget],
-            layout=self.layout['operation_box'])
+            [
+                self.run_button, self.load_data_button,
+                self.save_config_button,
+                self.save_simulation_button,
+                self.simulation_list_widget,
+             ],
+            layout=self.layout['operation_box']
+        )
+        
         # title
         self._header = HTML(value=f"""<div
             style='background:{self.layout['theme_color']};
@@ -729,7 +745,7 @@ class HNNGUI:
                 b64 = base64.b64encode(_simulation_data)
 
             payload = b64.decode()
-            self.save_simuation_button.value = (
+            self.save_simulation_button.value = (
                 self.html_download_button.format(
                     payload=payload, filename=result_file,
                     is_disabled="", btn_height=self.layout['run_btn'].height,
@@ -830,7 +846,7 @@ class HNNGUI:
                 self.widget_backend_selection,
                 self._backend_config_out
             ]),
-            Box(layout=Layout(height="20px")),
+            Box(layout=Layout(height="10px")),
             HTML(
                 f"<div {box_style}'>Default Visualization Parameters</div>",
             ),
@@ -839,7 +855,19 @@ class HNNGUI:
                 self.widget_default_scaling,
                 self.widget_min_frequency,
                 self.widget_max_frequency,
-            ])
+            ]),
+            VBox([
+                HBox([
+                    self.run_button, self.load_data_button,
+                    self.save_config_button,
+                    self.save_simulation_button,
+                    self.simulation_list_widget,
+                ])
+            ],
+            layout=Layout(
+                flex="1",
+                justify_content="flex-end",
+            ))
         ], layout=self.layout['config_box']).add_class('simulation-box')
 
         # Displays the default backend options
@@ -850,24 +878,61 @@ class HNNGUI:
             self.widget_n_jobs
         )
 
-        connectivity_configuration = Tab()
+        connectivity_configuration = Tab(
+            layout= Layout(
+                height="98%",
+                flex="1",
+                # border="1px solid blue",  # debug
+            ),
+        )
 
         connectivity_box = VBox([
-            HBox([self.load_connectivity_button, ]),
+            HBox(
+                [
+                    self.load_connectivity_button, 
+                ],
+                layout=Layout(
+                    height='auto',
+                    overflow='visible',
+                )
+            ),
             self._connectivity_out,
-        ])
+            ],
+            layout=Layout(
+                overflow="auto",
+                flex="1",
+                # max_height="400px",
+                # height="calc(100% - 60px)"
+            ),
+        )
 
         cell_parameters = VBox([
-            HBox([
-                self.cell_type_radio_buttons,
-                self.cell_layer_radio_buttons
-            ]), self._cell_params_out
-        ])
+            HBox(
+                [
+                    self.cell_type_radio_buttons,
+                    self.cell_layer_radio_buttons,
+                ],
+                layout=Layout(
+                    height='auto',
+                    overflow='visible',
+                )
+            ), self._cell_params_out,
+            ],
+            layout=Layout(
+                overflow='auto',
+                flex="1",
+                # max_height="400px",
+            ),
+        )
 
-        connectivity_configuration.children = [connectivity_box,
-                                               cell_parameters]
-        connectivity_configuration.titles = ['Connectivity',
-                                             'Cell parameters']
+        connectivity_configuration.children = [
+            connectivity_box,
+            cell_parameters,
+        ]
+        connectivity_configuration.titles = [
+            'Connectivity',
+            'Cell Parameters',
+        ]
 
         drive_selections = VBox([
             self.add_drive_button, self.widget_drive_type_selection,
@@ -886,6 +951,12 @@ class HNNGUI:
 
         # Tabs for left pane
         left_tab = Tab()
+
+        left_tab.layout = Layout(
+            flex="1",
+            overflow="hidden",
+        )
+
         left_tab.children = [
             simulation_box,
             connectivity_configuration,
@@ -895,12 +966,19 @@ class HNNGUI:
         titles = (
             'Simulation',
             'Network',
-            'External drives',
+            'External Drives',
             'Visualization',
         )
         for idx, title in enumerate(titles):
             left_tab.set_title(idx, title)
             left_tab.add_class("custom-left-tab")
+
+            # This is the same as changing config_box above
+            # left_tab.children[idx].layout = Layout(
+            #     width="100%",
+            #     flex="1",
+            #     overflow="auto",
+            # )
 
         # For visualization_window, add 10px to the pane_width to account for
         # the offset on the left margin. This effectively reduces the width
@@ -912,15 +990,17 @@ class HNNGUI:
 
         self.app_layout = AppLayout(
             header=self._header,
-            left_sidebar=VBox([
-                VBox(
-                    [left_tab],
-                    layout=self.layout['left_tab']
-                ),
-                self._operation_buttons,
-                self._log_window,
-            ], 
-            layout=self.layout['left_sidebar']),
+            left_sidebar=VBox(
+                [
+                    VBox(
+                        [left_tab],
+                        layout=self.layout['left_tab'],
+                    ),
+                    # self._operation_buttons,
+                    self._log_window,
+                ], 
+                layout=self.layout['left_sidebar'],
+            ),
             right_sidebar=figs_output,
             footer=self._simulation_status_bar,
             pane_widths=[
@@ -931,7 +1011,7 @@ class HNNGUI:
             pane_heights=[
                 self.layout['header_height'],
                 self.layout['visualization_window'].height,
-                self.layout['simulation_status_height']
+                self.layout['simulation_status_height'],
             ],
         )
 
@@ -940,7 +1020,7 @@ class HNNGUI:
         scrollbar_gutter = HTML("""
         <style>
             .widget-box.widget-vbox {
-                overflow-y: auto;
+                overflow-y: hidden;
                 scrollbar-gutter: stable;
             }
         </style>
