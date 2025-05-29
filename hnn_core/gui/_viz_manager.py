@@ -9,7 +9,7 @@ from functools import partial, wraps
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from IPython.display import display
+from IPython.display import display, HTML
 from ipywidgets import (Box, Button, Dropdown, BoundedFloatText, FloatText,
                         HBox, Label, Layout, Output, Tab, VBox, link)
 

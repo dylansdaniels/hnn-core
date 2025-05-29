@@ -318,7 +318,7 @@ class HNNGUI:
                 width=f"{viz_win_width - 10}px",
                 height=f"{main_content_height - 10}px",
                 margin="0px 0px 0px 10px",
-                border='1px solid gray',
+                border='1px solid gray', # viz border
                 # overflow='scroll',
             ),
             "visualization_output": Layout(
@@ -1015,7 +1015,8 @@ class HNNGUI:
             ],
         )
 
-        # self.app_layout.left_sidebar.add_class("custom-left-sidebar")
+        self.app_layout.left_sidebar.add_class("left-sidebar")
+        self.app_layout.right_sidebar.add_class("right-sidebar")
 
         scrollbar_gutter = HTML("""
         <style>
