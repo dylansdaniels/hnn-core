@@ -124,6 +124,7 @@ class CellResponse(object):
         self._vsec = list()
         self._isec = list()
         self._ca = list()
+        self._ina = list()
         if times is not None:
             if not isinstance(times, (list, np.ndarray)):
                 raise TypeError("'times' is an np.ndarray of simulation times")
@@ -150,9 +151,11 @@ class CellResponse(object):
             and self._vsec == other._vsec
             and self._isec == other._isec
             and self._ca == other._ca
+            and self._ina == other.ina
             and self.vsec == other.vsec
             and self.isec == other.isec
             and self.ca == other.ca
+            and self.ina == other.ina
         )
 
     @property
@@ -198,6 +201,10 @@ class CellResponse(object):
     @property
     def ca(self):
         return self._ca
+
+    @property
+    def ina(self):
+        return self._ina
 
     @property
     def times(self):
@@ -446,6 +453,12 @@ class CellResponse(object):
             # Turn `int` gid keys into string values for hdf5 format
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ca"].append(trial)
+        ina_data = self.ina
+        cell_response_data["ina"] = list()
+        for trial in ina_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ina"].append(trial)
         cell_response_data["times"] = self.times
         return cell_response_data
 

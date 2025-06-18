@@ -394,6 +394,7 @@ class Cell:
         self.vsec = dict()
         self.isec = dict()
         self.ca = dict()
+        self.ina = dict()
         # insert iclamp
         self.list_IClamp = list()
         self._gid = None
@@ -485,6 +486,7 @@ class Cell:
         cell_data["vsec"] = self.vsec
         cell_data["isec"] = self.isec
         cell_data["ca"] = self.ca
+        cell_data["ina"] = self.ina
         cell_data["tonic_biases"] = self.tonic_biases
         return cell_data
 
@@ -762,7 +764,13 @@ class Cell:
         stim.amp = amplitude
         self.tonic_biases.append(stim)
 
-    def record(self, record_vsec=False, record_isec=False, record_ca=False):
+    def record(
+        self,
+        record_vsec=False,
+        record_isec=False,
+        record_ca=False,
+        record_ina=False,
+    ):
         """Record current and voltage from all sections
 
         Parameters
@@ -822,6 +830,18 @@ class Cell:
                 if hasattr(self._nrn_sections[sec_name](0.5), "_ref_cai"):
                     self.ca[sec_name] = h.Vector()
                     self.ca[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_cai)
+
+        # sodium currents
+        if record_ina == "soma":
+            self.ina = dict.fromkeys(["soma"])
+        elif record_ina == "all":
+            self.ina = dict.fromkeys(section_names)
+
+        if record_ina:
+            for sec_name in self.ina:
+                if hasattr(self._nrn_sections[sec_name](0.5), "_ref_ina"):
+                    self.ina[sec_name] = h.Vector()
+                    self.ina[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ina)
 
     def syn_create(self, secloc, e, tau1, tau2):
         """Create an h.Exp2Syn synapse.

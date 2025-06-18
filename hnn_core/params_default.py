@@ -134,6 +134,7 @@ def get_params_default(nprox=2, ndist=1):
         "record_vsec": 0,  # whether to record voltages
         "record_isec": 0,  # whether to record currents
         "record_ca": 0,  # whether to record calcium concentration
+        "record_ina": 0,  # whether to record sodium concentration
         # numerics
         # N_trials of 1 means that seed is set by rank
         "N_trials": 1,
