@@ -125,6 +125,7 @@ class CellResponse(object):
         self._isec = list()
         self._ca = list()
         self._ina = list()
+        self._ik = list()
         if times is not None:
             if not isinstance(times, (list, np.ndarray)):
                 raise TypeError("'times' is an np.ndarray of simulation times")
@@ -151,11 +152,13 @@ class CellResponse(object):
             and self._vsec == other._vsec
             and self._isec == other._isec
             and self._ca == other._ca
-            and self._ina == other.ina
+            and self._ina == other._ina
+            and self._ik == other._ik
             and self.vsec == other.vsec
             and self.isec == other.isec
             and self.ca == other.ca
             and self.ina == other.ina
+            and self.ik == other.ik
         )
 
     @property
@@ -203,8 +206,11 @@ class CellResponse(object):
         return self._ca
 
     @property
-    def ina(self):
-        return self._ina
+    def ionic_currents(self):
+        return {
+            "ina": self._ina,
+            "ik": self._ik,
+        }
 
     @property
     def times(self):
@@ -453,12 +459,22 @@ class CellResponse(object):
             # Turn `int` gid keys into string values for hdf5 format
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ca"].append(trial)
+
+        # sodium
         ina_data = self.ina
         cell_response_data["ina"] = list()
         for trial in ina_data:
             # Turn `int` gid keys into string values for hdf5 format
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ina"].append(trial)
+
+        # potassium
+        ik_data = self.ik
+        cell_response_data["ik"] = list()
+        for trial in ik_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ik"].append(trial)
         cell_response_data["times"] = self.times
         return cell_response_data
 

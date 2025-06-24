@@ -116,6 +116,13 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
             if ina is not None:
                 ina_py[gid][sec_name] = ina.to_python()
 
+    ik_py = dict()
+    for gid, ik_dict in neuron_net._ik.items():
+        ik_py[gid] = dict()
+        for sec_name, ik in ik_dict.items():
+            if ik is not None:
+                ik_py[gid][sec_name] = ik.to_python()
+
     dpl_data = np.c_[
         neuron_net._nrn_dipoles["L2_pyramidal"].as_numpy()
         + neuron_net._nrn_dipoles["L5_pyramidal"].as_numpy(),
@@ -138,6 +145,7 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         "isec": isec_py,
         "ca": ca_py,
         "ina": ina_py,
+        "ik": ik_py,
         "rec_data": rec_arr_py,
         "rec_times": rec_times_py,
         "times": times.to_python(),
@@ -312,6 +320,7 @@ class NetworkBuilder(object):
         self._isec = dict()
         self._ca = dict()
         self._ina = dict()
+        self._ik = dict()
         self._nrn_rec_arrays = dict()
         self._nrn_rec_callbacks = list()
 
@@ -350,12 +359,14 @@ class NetworkBuilder(object):
         record_isec = self.net._params["record_isec"]
         record_ca = self.net._params["record_ca"]
         record_ina = self.net._params["record_ina"]
+        record_ik = self.net._params["record_ik"]
         self._create_cells_and_drives(
             threshold=self.net._params["threshold"],
             record_vsec=record_vsec,
             record_isec=record_isec,
             record_ca=record_ca,
             record_ina=record_ina,
+            record_ik=record_ik,
         )
 
         self.state_init()
@@ -434,6 +445,7 @@ class NetworkBuilder(object):
         record_isec=False,
         record_ca=False,
         record_ina=False,
+        record_ik=False,
     ):
         """Parallel create cells AND external drives
 
@@ -475,6 +487,7 @@ class NetworkBuilder(object):
                     record_isec,
                     record_ca,
                     record_ina,
+                    record_ik,
                 )
 
                 # this call could belong in init of a _Cell (with threshold)?
@@ -613,6 +626,7 @@ class NetworkBuilder(object):
             self._isec[cell.gid] = cell.isec
             self._ca[cell.gid] = cell.ca
             self._ina[cell.gid] = cell.ina
+            self._ik[cell.gid] = cell.ik
 
         # reduce across threads
         for nrn_dpl in self._nrn_dipoles.values():
@@ -625,6 +639,7 @@ class NetworkBuilder(object):
         isec_list = _PC.py_gather(self._isec, 0)
         ca_list = _PC.py_gather(self._ca, 0)
         ina_list = _PC.py_gather(self._ina, 0)
+        ik_list = _PC.py_gather(self._ik, 0)
 
         # combine spiking data from each proc
         spike_times_list = _PC.py_gather(self._spike_times, 0)
@@ -644,6 +659,8 @@ class NetworkBuilder(object):
                 self._ca.update(ca)
             for ina in ina_list:
                 self._ina.update(ina)
+            for ik in ik_list:
+                self._ik.update(ik)
 
         _PC.barrier()  # get all nodes to this place before continuing
 

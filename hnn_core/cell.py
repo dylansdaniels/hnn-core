@@ -395,6 +395,7 @@ class Cell:
         self.isec = dict()
         self.ca = dict()
         self.ina = dict()
+        self.ik = dict()
         # insert iclamp
         self.list_IClamp = list()
         self._gid = None
@@ -487,6 +488,7 @@ class Cell:
         cell_data["isec"] = self.isec
         cell_data["ca"] = self.ca
         cell_data["ina"] = self.ina
+        cell_data["ik"] = self.ik
         cell_data["tonic_biases"] = self.tonic_biases
         return cell_data
 
@@ -770,6 +772,7 @@ class Cell:
         record_isec=False,
         record_ca=False,
         record_ina=False,
+        record_ik=False,
     ):
         """Record current and voltage from all sections
 
@@ -842,6 +845,18 @@ class Cell:
                 if hasattr(self._nrn_sections[sec_name](0.5), "_ref_ina"):
                     self.ina[sec_name] = h.Vector()
                     self.ina[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ina)
+
+        # potassium (hh2, ik) currents
+        if record_ik == "soma":
+            self.ik = dict.fromkeys(["soma"])
+        elif record_ik == "all":
+            self.ik = dict.fromkeys(section_names)
+
+        if record_ik:
+            for sec_name in self.ik:
+                if hasattr(self._nrn_sections[sec_name](0.5), "_ref_ik"):
+                    self.ik[sec_name] = h.Vector()
+                    self.ik[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ik)
 
     def syn_create(self, secloc, e, tau1, tau2):
         """Create an h.Exp2Syn synapse.
