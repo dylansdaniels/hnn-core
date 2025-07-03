@@ -5,7 +5,7 @@ import numpy as np
 from hnn_core import (
     JoblibBackend,
     # MPIBackend,
-    calcium_model,
+    # calcium_model,
     jones_2009_model,
     simulate_dipole,
 )
@@ -105,14 +105,12 @@ for cell_type, range in net.gid_ranges.items():
     if cell_type in net.cell_types.keys():
         cell_gids[cell_type] = list(range)
 
-print(
-    f"Cell types: {cell_gids.keys()}"
-)
+print(f"Cell types: {cell_gids.keys()}")
 
 
 # %% ####################
 
-cell_type = 'L5_pyramidal'
+cell_type = "L5_pyramidal"
 cell_gid = cell_gids[cell_type][0]
 
 for key in t_01[cell_gid].keys():
@@ -129,11 +127,11 @@ plt.legend()
 
 # %% ####################
 # average across all cell gids for each section
-cell_type = 'L5_pyramidal'
+cell_type = "L5_pyramidal"
 cell_gid = cell_gids[cell_type][0]
 
 section_currents = {}
-section_currents['agg'] = 0
+section_currents["agg"] = 0
 
 for section in t_01[cell_gid].keys():
     rows = []
@@ -144,10 +142,10 @@ for section in t_01[cell_gid].keys():
             pass
     section_currents[section] = np.array(rows)
 
-    if type(section_currents['agg']) != np.ndarray:
-        section_currents['agg'] = np.array(rows)
+    if type(section_currents["agg"]) != np.ndarray:
+        section_currents["agg"] = np.array(rows)
     else:
-        section_currents['agg'] += np.array(rows)
+        section_currents["agg"] += np.array(rows)
 
 section = "soma"
 print(section_currents[section].shape, sep="\n")
@@ -162,7 +160,9 @@ for section in section_currents.keys():
     )
 plt.xlabel("time")
 plt.ylabel("na")
-plt.title(f"Agggregate and Sectional Na Currents for {cell_type}, \nAveraged Across Cell GIDs")
+plt.title(
+    f"Agggregate and Sectional Na Currents for {cell_type}, \nAveraged Across Cell GIDs"
+)
 plt.legend()
 
 # %% ####################
@@ -199,11 +199,10 @@ trial = net.cell_response.ina[0]
 cell_currents = {}
 
 for cell_type, gids in cell_gids.items():
-
     cell_sections = trial[gids[0]].keys()
 
     section_currents = {}
-    section_currents['agg'] = 0
+    section_currents["agg"] = 0
 
     for section in cell_sections:
         rows = []
@@ -214,10 +213,10 @@ for cell_type, gids in cell_gids.items():
                 pass
         section_currents[section] = np.array(rows)
 
-        if type(section_currents['agg']) != np.ndarray:
-            section_currents['agg'] = np.array(rows)
+        if type(section_currents["agg"]) != np.ndarray:
+            section_currents["agg"] = np.array(rows)
         else:
-            section_currents['agg'] += np.array(rows)
+            section_currents["agg"] += np.array(rows)
 
     cell_currents[cell_type] = section_currents
 
@@ -228,18 +227,16 @@ fig, ax = plt.subplots(
     ncols=1,
     figsize=(6, 24),
 )
-gs
+
 for i, cell in enumerate(cell_currents.keys()):
     ax[i].plot(
         dpls[0].times,
-        np.mean(cell_currents[cell]['agg'], axis=0),
+        np.mean(cell_currents[cell]["agg"], axis=0),
     )
 
     ax[i].set_xlabel("Time")
     ax[i].set_ylabel("Aggregate Na Currents (Sum Across All Sections)")
-    ax[i].set_title(
-        f"{cell}\nTransmembrane Na Currents Averaged Across Cells"
-    )
+    ax[i].set_title(f"{cell}\nTransmembrane Na Currents Averaged Across Cells")
 
 plt.tight_layout()
 
@@ -252,11 +249,10 @@ fig, ax = plt.subplots(
 )
 
 for i, cell in enumerate(cell_currents.keys()):
-
     section_currents = cell_currents[cell]
 
     for section in section_currents.keys():
-        if not section == 'agg':
+        if not section == "agg":
             ax[i].plot(
                 dpls[0].times,
                 np.mean(section_currents[section], axis=0),
@@ -266,9 +262,7 @@ for i, cell in enumerate(cell_currents.keys()):
 
     ax[i].set_xlabel("Time")
     ax[i].set_ylabel("Na Currents")
-    ax[i].set_title(
-        f"{cell}\nTransmembrane Na Currents Averaged Across Cells"
-    )
+    ax[i].set_title(f"{cell}\nTransmembrane Na Currents Averaged Across Cells")
 
 plt.tight_layout()
 

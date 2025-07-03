@@ -6,10 +6,15 @@ from hnn_core import (
     JoblibBackend,
     # MPIBackend,
     calcium_model,
-    jones_2009_model,
+    # jones_2009_model,
     simulate_dipole,
 )
+
+# from neuron import h
+from hnn_core.cells_default import pyramidal
+from hnn_core.network_builder import load_custom_mechanisms
 from hnn_core.network_models import add_erp_drives_to_jones_model
+from hnn_core.params import _short_name
 from hnn_core.viz import plot_dipole
 
 # %% ####################
@@ -264,10 +269,6 @@ ax2.plot(
 plt.tight_layout()
 
 # %% ####################
-from neuron import h
-from hnn_core.network_builder import load_custom_mechanisms
-from hnn_core.cells_default import pyramidal
-from hnn_core.params import _short_name
 
 load_custom_mechanisms()
 

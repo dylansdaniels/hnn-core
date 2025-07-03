@@ -299,31 +299,31 @@ def ik_sanity(
     plot_data=True,
     flip_order=False,
     cell_type="L5_pyramidal",
-    segment = 'agg',
+    segment="agg",
     line_colors=["#1b85d1", "#f6a208"],
-    ):
-
-    manual_sum = channel_currents["ik_kca"][cell_type][segment] \
-        + channel_currents["ik_km"][cell_type][segment] \
+):
+    manual_sum = (
+        channel_currents["ik_kca"][cell_type][segment]
+        + channel_currents["ik_km"][cell_type][segment]
         + channel_currents["ik_hh2"][cell_type][segment]
+    )
 
     manual_sum = np.sum(manual_sum, axis=0)
 
     model_sum = np.sum(channel_currents["ik"][cell_type][segment], axis=0)
 
     if plot_data:
-
-        order=[0,1]
+        order = [0, 1]
 
         if flip_order:
-            order=[1,0]
+            order = [1, 0]
 
         plt.plot(
             dpls[0].times,
             manual_sum,
             label="manual agg",
             color=line_colors[0],
-            zorder=order[0]
+            zorder=order[0],
         )
 
         plt.plot(
@@ -341,6 +341,7 @@ def ik_sanity(
     model_sum = np.round(model_sum, 2)
 
     return sum(manual_sum == model_sum) / len(manual_sum)
+
 
 ik_sanity(
     # flip_order=True,
@@ -366,11 +367,7 @@ def plot_agg_channel_currents(channel_currents):
             agg_sum = np.sum(cell_currents[cell]["agg"], axis=0)
 
             if type(agg_sum) != np.ndarray:
-                print("here")
                 continue
-
-            print(channel)
-            print(agg_sum)
 
             ax[i].plot(
                 dpls[0].times,
@@ -452,33 +449,45 @@ def plot_cell_currents_by_section(
     return
 
 
-plot_cell_currents_by_section(channel_name="ik_hh2", channel_currents=channel_currents)
+plot_cell_currents_by_section(
+    channel_name="ik_hh2",
+    channel_currents=channel_currents,
+)
 
 # %% ####################
+
 
 def plot_currents_column(
     ax,
     channel_currents,
     times,
-    bin_width = 1.0,
-    ):
-
+    channels=None,
+    bin_width=1.0,
+):
     dt = times[1] - times[0]
     samples_per_bin = int(bin_width / dt)
 
+    if channels is not None:
+        channel_currents = {
+            k: v for (k, v) in channel_currents.items() if k in channels
+        }
+
     # generate plots with binned data
     for channel in channel_currents.keys():
-
         cell_currents = channel_currents[channel]
 
         for i, cell in enumerate(cell_currents.keys()):
-
             y = np.sum(cell_currents[cell]["agg"], axis=0)
+
+            if type(y) != np.ndarray:
+                continue
 
             # reshape data for binning
             n_bins = len(y) // samples_per_bin
             y_binned = (
-                y[: n_bins * samples_per_bin].reshape(n_bins, samples_per_bin).mean(axis=1)
+                y[: n_bins * samples_per_bin]
+                .reshape(n_bins, samples_per_bin)
+                .mean(axis=1)
             )
             t_binned = (
                 times[: n_bins * samples_per_bin]
@@ -501,6 +510,7 @@ def plot_currents_column(
                 f"{cell}" + "\nTransmembrane Currents Averaged Across Cells",
             )
 
+
 rows = 2
 cols = 1
 times = dpls[0].times
@@ -512,11 +522,23 @@ fig, ax = plt.subplots(
     figsize=(6, 6 * rows),
 )
 
+channels = [
+    "ina",
+    "ik_hh2",
+    "ik_kca",
+    "ik_km",
+    "ica_ca",
+    "ica_cat",
+    "il_hh2",
+    "i_ar",
+]
+
 plot_currents_column(
     ax,
     channel_currents,
     times,
-    bin_width = bin_width,
+    channels=channels,
+    bin_width=bin_width,
 )
 
 for axis in ax:
@@ -527,113 +549,136 @@ plt.tight_layout()
 
 # %% ####################
 
-bin_width = 1.0
-times = dpls[0].times
-dt = times[1] - times[0]
-samples_per_bin = int(bin_width / dt)
 
-channels = ["ina", "ik_hh2"]
-rows = len(cell_currents.keys())
+def plot_net_in_out_currents(
+    channel_currents,
+    channels=None,
+):
+    bin_width = 1.0
+    times = dpls[0].times
+    dt = times[1] - times[0]
+    samples_per_bin = int(bin_width / dt)
 
-fig, ax = plt.subplots(
-    nrows=rows,
-    ncols=2,
-    figsize=(12, 6 * rows),
-)
+    if channels is None:
+        channels = channel_currents.keys()
 
-# cells = enumerate(next(iter(channel_currents.values())).keys())
-cells = channel_currents[list(channels)[0]].keys()
+    # get cell_types
+    cells = []
+    for channel in channel_currents:
+        for cell_type in channel_currents[channel].keys():
+            if cell_type not in cells:
+                cells.append(cell_type)
 
-ymax = None
-ymin = None
+    fig, ax = plt.subplots(
+        nrows=len(cells),
+        ncols=2,
+        figsize=(12, 6 * rows),
+    )
 
-for i, cell in enumerate(cells):
-    # initialize array to hold sums
-    # we will be summing the inward and outward currents to get the
-    # "net" current flow across all channel for each cell type
-    y_sum = np.array([])
+    # cells = enumerate(next(iter(channel_currents.values())).keys())
+    cells = channel_currents[list(channels)[0]].keys()
 
-    for channel in channels:
-        # average the "agg" for all GIDs in each cell type
-        y = np.sum(
-            channel_currents[channel][cell]["agg"],
-            axis=0,
+    ymax = None
+    ymin = None
+
+    for i, cell in enumerate(cells):
+        # initialize array to hold sums
+        # we will be summing the inward and outward currents to get the
+        # "net" current flow across all channel for each cell type
+        y_sum = np.array([])
+
+        for channel in channels:
+            # average the "agg" for all GIDs in each cell type
+            y = np.sum(
+                channel_currents[channel][cell]["agg"],
+                axis=0,
+            )
+            y_sum = y if len(y_sum) == 0 else y_sum + y
+
+        # get num of bins needed, rounding down
+        n_bins = len(y_sum) // samples_per_bin
+
+        # slice the data, discarding excess datapoints that don't
+        # completely constitute a bin
+        usable_data = n_bins * samples_per_bin
+        y_sum = y_sum[:usable_data]
+
+        # reshape the data so that each row is a bin and each column is a sample,
+        # then average within each bin
+        y_sum = y_sum.reshape(
+            n_bins,
+            samples_per_bin,
         )
-        y_sum = y if len(y_sum) == 0 else y_sum + y
+        y_binned = y_sum.mean(axis=1)
 
-    # get num of bins needed, rounding down
-    n_bins = len(y_sum) // samples_per_bin
+        # reshape the time data into bins
+        x_binned = (
+            times[: n_bins * samples_per_bin]
+            .reshape(n_bins, samples_per_bin)
+            .mean(axis=1)
+        )
 
-    # slice the data, discarding excess datapoints that don't
-    # completely constitute a bin
-    usable_data = n_bins * samples_per_bin
-    y_sum = y_sum[:usable_data]
+        # mask for positive values
+        # used for labelling / coloring data
+        y_pos = y_binned >= 0
 
-    # reshape the data so that each row is a bin and each column is a sample,
-    # then average within each bin
-    y_sum = y_sum.reshape(
-        n_bins,
-        samples_per_bin,
+        # generate bar plot
+        ax[i, 0].bar(
+            x_binned[y_pos],
+            y_binned[y_pos],
+            width=bin_width,
+            align="edge",
+            alpha=0.7,
+            label="inward",
+            color="green",
+        )
+
+        # generate bar plot
+        ax[i, 0].bar(
+            x_binned[~y_pos],
+            y_binned[~y_pos],
+            width=bin_width,
+            align="edge",
+            alpha=0.7,
+            label="outward",
+            color="red",
+        )
+
+        # set labels
+        ax[i, 0].set_xlabel("Time (s)")
+        ax[i, 0].set_ylabel(" + ".join(channels))
+        ax[i, 0].set_title(f"{cell}\nSum of Transmembrane Currents (Mean Across GIDs)")
+
+        cell_max = max(y_binned)
+        cell_min = min(y_binned)
+
+        ymax = max(ymax, cell_max) if ymax is not None else cell_max
+        ymin = min(ymin, cell_min) if ymin is not None else cell_min
+
+    y_lim = max(
+        abs(ymax),
+        abs(ymin),
     )
-    y_binned = y_sum.mean(axis=1)
 
-    # reshape the time data into bins
-    x_binned = (
-        times[: n_bins * samples_per_bin].reshape(n_bins, samples_per_bin).mean(axis=1)
+    for axis in ax[:, 0]:
+        axis.set_ylim(
+            y_lim * -1.05,
+            y_lim * 1.05,
+        )
+        axis.set_ylim(axis.get_ylim()[::-1])
+        axis.legend()
+
+    plot_layer_dipoles_in_column(
+        ax[:, 1],
+        dpls,
+        dpls_smoothed,
     )
 
-    # mask for positive values
-    # used for labelling / coloring data
-    y_pos = y_binned >= 0
+    plt.tight_layout()
 
-    # generate bar plot
-    ax[i, 0].bar(
-        x_binned[y_pos],
-        y_binned[y_pos],
-        width=bin_width,
-        align="edge",
-        alpha=0.7,
-        label="inward",
-        color="green",
-    )
-
-    # generate bar plot
-    ax[i, 0].bar(
-        x_binned[~y_pos],
-        y_binned[~y_pos],
-        width=bin_width,
-        align="edge",
-        alpha=0.7,
-        label="outward",
-        color="red",
-    )
-
-    # set labels
-    ax[i, 0].set_xlabel("Time (s)")
-    ax[i, 0].set_ylabel(" + ".join(channels))
-    ax[i, 0].set_title(f"{cell}\nSum of Transmembrane Currents (Mean Across GIDs)")
-
-    cell_max = max(y_binned)
-    cell_min = min(y_binned)
-
-    ymax = max(ymax, cell_max) if ymax is not None else cell_max
-    ymin = min(ymin, cell_min) if ymin is not None else cell_min
-
-y_lim = max(
-    abs(ymax),
-    abs(ymin),
+plot_net_in_out_currents(
+    channel_currents,
+    ["ina", "ik"],
 )
-
-for axis in ax[:, 0]:
-    axis.set_ylim(
-        y_lim * -1.05,
-        y_lim * 1.05,
-    )
-    axis.set_ylim(axis.get_ylim()[::-1])
-    axis.legend()
-
-plot_layer_dipoles_in_column(ax[:, 1], dpls, dpls_smoothed)
-
-plt.tight_layout()
 
 # %%
