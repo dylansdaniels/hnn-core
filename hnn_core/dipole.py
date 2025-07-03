@@ -25,6 +25,13 @@ def simulate_dipole(
     record_ca=False,
     record_ina=False,
     record_ik=False,
+    record_ik_hh2=False,
+    record_ik_kca=False,
+    record_ik_km=False,
+    record_ica_ca=False,
+    record_ica_cat=False,
+    record_il_hh2=False,
+    record_i_ar=False,
     postproc=False,
 ):
     """Simulate a dipole given the experiment parameters.
@@ -120,6 +127,27 @@ def simulate_dipole(
 
     _check_option("record_ik", record_ik, ["all", "soma", False])
     net._params["record_ik"] = record_ik
+
+    _check_option("record_ik_hh2", record_ik_hh2, ["all", "soma", False])
+    net._params["record_ik_hh2"] = record_ik_hh2
+
+    _check_option("record_ik_kca", record_ik_kca, ["all", "soma", False])
+    net._params["record_ik_kca"] = record_ik_kca
+
+    _check_option("record_ik_km", record_ik_km, ["all", "soma", False])
+    net._params["record_ik_km"] = record_ik_km
+
+    _check_option("record_ica_ca", record_ica_ca, ["all", "soma", False])
+    net._params["record_ica_ca"] = record_ica_ca
+
+    _check_option("record_ica_cat", record_ica_cat, ["all", "soma", False])
+    net._params["record_ica_cat"] = record_ica_cat
+
+    _check_option("record_il_hh2", record_il_hh2, ["all", "soma", False])
+    net._params["record_il_hh2"] = record_il_hh2
+
+    _check_option("record_i_ar", record_i_ar, ["all", "soma", False])
+    net._params["record_i_ar"] = record_i_ar
 
     net._tstop = tstop
 

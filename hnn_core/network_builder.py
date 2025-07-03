@@ -123,6 +123,55 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
             if ik is not None:
                 ik_py[gid][sec_name] = ik.to_python()
 
+    ik_hh2_py = dict()
+    for gid, ik_hh2_dict in neuron_net._ik_hh2.items():
+        ik_hh2_py[gid] = dict()
+        for sec_name, ik_hh2 in ik_hh2_dict.items():
+            if ik_hh2 is not None:
+                ik_hh2_py[gid][sec_name] = ik_hh2.to_python()
+
+    ik_kca_py = dict()
+    for gid, ik_kca_dict in neuron_net._ik_kca.items():
+        ik_kca_py[gid] = dict()
+        for sec_name, ik_kca in ik_kca_dict.items():
+            if ik_kca is not None:
+                ik_kca_py[gid][sec_name] = ik_kca.to_python()
+
+    ik_km_py = dict()
+    for gid, ik_km_dict in neuron_net._ik_km.items():
+        ik_km_py[gid] = dict()
+        for sec_name, ik_km in ik_km_dict.items():
+            if ik_km is not None:
+                ik_km_py[gid][sec_name] = ik_km.to_python()
+
+    ica_ca_py = dict()
+    for gid, ica_ca_dict in neuron_net._ica_ca.items():
+        ica_ca_py[gid] = dict()
+        for sec_name, ica_ca in ica_ca_dict.items():
+            if ica_ca is not None:
+                ica_ca_py[gid][sec_name] = ica_ca.to_python()
+
+    ica_cat_py = dict()
+    for gid, ica_cat_dict in neuron_net._ica_cat.items():
+        ica_cat_py[gid] = dict()
+        for sec_name, ica_cat in ica_cat_dict.items():
+            if ica_cat is not None:
+                ica_cat_py[gid][sec_name] = ica_cat.to_python()
+
+    il_hh2_py = dict()
+    for gid, il_hh2_dict in neuron_net._il_hh2.items():
+        il_hh2_py[gid] = dict()
+        for sec_name, il_hh2 in il_hh2_dict.items():
+            if il_hh2 is not None:
+                il_hh2_py[gid][sec_name] = il_hh2.to_python()
+
+    i_ar_py = dict()
+    for gid, i_ar_dict in neuron_net._i_ar.items():
+        i_ar_py[gid] = dict()
+        for sec_name, i_ar in i_ar_dict.items():
+            if i_ar is not None:
+                i_ar_py[gid][sec_name] = i_ar.to_python()
+
     dpl_data = np.c_[
         neuron_net._nrn_dipoles["L2_pyramidal"].as_numpy()
         + neuron_net._nrn_dipoles["L5_pyramidal"].as_numpy(),
@@ -146,6 +195,13 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         "ca": ca_py,
         "ina": ina_py,
         "ik": ik_py,
+        "ik_hh2": ik_hh2_py,
+        "ik_kca": ik_kca_py,
+        "ik_km": ik_km_py,
+        "ica_ca": ica_ca_py,
+        "ica_cat": ica_cat_py,
+        "il_hh2": il_hh2_py,
+        "i_ar": i_ar_py,
         "rec_data": rec_arr_py,
         "rec_times": rec_times_py,
         "times": times.to_python(),
@@ -321,6 +377,14 @@ class NetworkBuilder(object):
         self._ca = dict()
         self._ina = dict()
         self._ik = dict()
+        self._ik_hh2 = dict()
+        self._ik_kca = dict()
+        self._ik_km = dict()
+        self._ica_ca = dict()
+        self._ica_cat = dict()
+        self._il_hh2 = dict()
+        self._i_ar = dict()
+
         self._nrn_rec_arrays = dict()
         self._nrn_rec_callbacks = list()
 
@@ -360,6 +424,13 @@ class NetworkBuilder(object):
         record_ca = self.net._params["record_ca"]
         record_ina = self.net._params["record_ina"]
         record_ik = self.net._params["record_ik"]
+        record_ik_hh2 = self.net._params["record_ik_hh2"]
+        record_ik_kca = self.net._params["record_ik_kca"]
+        record_ik_km = self.net._params["record_ik_km"]
+        record_ica_ca=self.net._params["record_ica_ca"]
+        record_ica_cat=self.net._params["record_ica_cat"]
+        record_il_hh2=self.net._params["record_il_hh2"]
+        record_i_ar=self.net._params["record_i_ar"]
         self._create_cells_and_drives(
             threshold=self.net._params["threshold"],
             record_vsec=record_vsec,
@@ -367,6 +438,13 @@ class NetworkBuilder(object):
             record_ca=record_ca,
             record_ina=record_ina,
             record_ik=record_ik,
+            record_ik_hh2=record_ik_hh2,
+            record_ik_kca=record_ik_kca,
+            record_ik_km=record_ik_km,
+            record_ica_ca=record_ica_ca,
+            record_ica_cat=record_ica_cat,
+            record_il_hh2=record_il_hh2,
+            record_i_ar=record_i_ar,
         )
 
         self.state_init()
@@ -446,6 +524,13 @@ class NetworkBuilder(object):
         record_ca=False,
         record_ina=False,
         record_ik=False,
+        record_ik_hh2=False,
+        record_ik_kca=False,
+        record_ik_km=False,
+        record_ica_ca=False,
+        record_ica_cat=False,
+        record_il_hh2=False,
+        record_i_ar=False,
     ):
         """Parallel create cells AND external drives
 
@@ -488,6 +573,13 @@ class NetworkBuilder(object):
                     record_ca,
                     record_ina,
                     record_ik,
+                    record_ik_hh2,
+                    record_ik_kca,
+                    record_ik_km,
+                    record_ica_ca,
+                    record_ica_cat,
+                    record_il_hh2,
+                    record_i_ar,
                 )
 
                 # this call could belong in init of a _Cell (with threshold)?
@@ -627,6 +719,13 @@ class NetworkBuilder(object):
             self._ca[cell.gid] = cell.ca
             self._ina[cell.gid] = cell.ina
             self._ik[cell.gid] = cell.ik
+            self._ik_hh2[cell.gid] = cell.ik_hh2
+            self._ik_kca[cell.gid] = cell.ik_kca
+            self._ik_km[cell.gid] = cell.ik_km
+            self._ica_ca[cell.gid] = cell.ica_ca
+            self._ica_cat[cell.gid] = cell.ica_cat
+            self._il_hh2[cell.gid] = cell.il_hh2
+            self._i_ar[cell.gid] = cell.i_ar
 
         # reduce across threads
         for nrn_dpl in self._nrn_dipoles.values():
@@ -640,6 +739,13 @@ class NetworkBuilder(object):
         ca_list = _PC.py_gather(self._ca, 0)
         ina_list = _PC.py_gather(self._ina, 0)
         ik_list = _PC.py_gather(self._ik, 0)
+        ik_hh2_list = _PC.py_gather(self._ik_hh2, 0)
+        ik_kca_list = _PC.py_gather(self._ik_kca, 0)
+        ik_km_list = _PC.py_gather(self._ik_km, 0)
+        ica_ca_list = _PC.py_gather(self._ica_ca, 0)
+        ica_cat_list = _PC.py_gather(self._ica_cat, 0)
+        il_hh2_list = _PC.py_gather(self._il_hh2, 0)
+        i_ar_list = _PC.py_gather(self._i_ar, 0)
 
         # combine spiking data from each proc
         spike_times_list = _PC.py_gather(self._spike_times, 0)
@@ -661,6 +767,20 @@ class NetworkBuilder(object):
                 self._ina.update(ina)
             for ik in ik_list:
                 self._ik.update(ik)
+            for ik_hh2 in ik_hh2_list:
+                self._ik_hh2.update(ik_hh2)
+            for ik_kca in ik_kca_list:
+                self._ik_kca.update(ik_kca)
+            for ik_km in ik_km_list:
+                self._ik_km.update(ik_km)
+            for ica_ca in ica_ca_list:
+                self._ica_ca.update(ica_ca)
+            for ica_cat in ica_cat_list:
+                self._ica_cat.update(ica_cat)
+            for il_hh2 in il_hh2_list:
+                self._il_hh2.update(il_hh2)
+            for i_ar in i_ar_list:
+                self._i_ar.update(i_ar)
 
         _PC.barrier()  # get all nodes to this place before continuing
 

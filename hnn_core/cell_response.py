@@ -126,6 +126,14 @@ class CellResponse(object):
         self._ca = list()
         self._ina = list()
         self._ik = list()
+        self._ik_hh2 = list()
+        self._ik_kca = list()
+        self._ik_km = list()
+        self._ica_ca = list()
+        self._ica_cat = list()
+        self._il_hh2 = list()
+        self._i_ar = list()
+
         if times is not None:
             if not isinstance(times, (list, np.ndarray)):
                 raise TypeError("'times' is an np.ndarray of simulation times")
@@ -154,11 +162,25 @@ class CellResponse(object):
             and self._ca == other._ca
             and self._ina == other._ina
             and self._ik == other._ik
+            and self._ik_hh2 == other._ik_hh2
+            and self._ik_kca == other._ik_kca
+            and self._ik_km == other._ik_km
+            and self._ica_ca == other._ica_ca
+            and self._ica_cat == other._ica_cat
+            and self._il_hh2 == other._il_hh2
+            and self._i_ar == other._i_ar
             and self.vsec == other.vsec
             and self.isec == other.isec
             and self.ca == other.ca
             and self.ina == other.ina
             and self.ik == other.ik
+            and self.ik_hh2 == other.ik_hh2
+            and self.ik_kca == other.ik_kca
+            and self.ik_km == other.ik_km
+            and self.ica_ca == other.ica_ca
+            and self.ica_cat == other.ica_cat
+            and self.il_hh2 == other.il_hh2
+            and self.i_ar == other.i_ar
         )
 
     @property
@@ -210,6 +232,13 @@ class CellResponse(object):
         return {
             "ina": self._ina,
             "ik": self._ik,
+            "ik_hh2": self._ik_hh2,
+            "ik_kca": self._ik_kca,
+            "ik_km": self._ik_km,
+            "ica_ca": self._ica_ca,
+            "ica_cat": self._ica_cat,
+            "il_hh2": self._il_hh2,
+            "i_ar": self._i_ar,
         }
 
     @property
@@ -460,7 +489,7 @@ class CellResponse(object):
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ca"].append(trial)
 
-        # sodium
+        # sodium agg
         ina_data = self.ina
         cell_response_data["ina"] = list()
         for trial in ina_data:
@@ -468,13 +497,70 @@ class CellResponse(object):
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ina"].append(trial)
 
-        # potassium
+        # potassium agg
         ik_data = self.ik
         cell_response_data["ik"] = list()
         for trial in ik_data:
             # Turn `int` gid keys into string values for hdf5 format
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ik"].append(trial)
+
+        # potassium hh2
+        ik_hh2_data = self.ik_hh2
+        cell_response_data["ik_hh2"] = list()
+        for trial in ik_hh2_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ik_hh2"].append(trial)
+
+        # potassium kca
+        ik_kca_data = self.ik_kca
+        cell_response_data["ik_kca"] = list()
+        for trial in ik_kca_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ik_kca"].append(trial)
+
+        # potassium km
+        ik_km_data = self.ik_km
+        cell_response_data["ik_km"] = list()
+        for trial in ik_km_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ik_km"].append(trial)
+
+        # calcium ca
+        ica_ca_data = self.ica_ca
+        cell_response_data["ica_ca"] = list()
+        for trial in ica_ca_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ica_ca"].append(trial)
+
+        # calcium cat
+        ica_cat_data = self.ica_cat
+        cell_response_data["ica_cat"] = list()
+        for trial in ica_cat_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["ica_cat"].append(trial)
+
+        # leak current hh2
+        il_hh2_data = self.il_hh2
+        cell_response_data["il_hh2"] = list()
+        for trial in il_hh2_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["il_hh2"].append(trial)
+
+        # anomalous rectifier ar
+        i_ar_data = self.i_ar
+        cell_response_data["i_ar"] = list()
+        for trial in i_ar_data:
+            # Turn `int` gid keys into string values for hdf5 format
+            trial = dict((str(key), val) for key, val in trial.items())
+            cell_response_data["i_ar"].append(trial)
+
         cell_response_data["times"] = self.times
         return cell_response_data
 

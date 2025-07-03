@@ -57,6 +57,13 @@ def _gather_trial_data(sim_data, net, n_trials, postproc):
         net.cell_response._ca.append(sim_data[idx]["ca"])
         net.cell_response._ina.append(sim_data[idx]["ina"])
         net.cell_response._ik.append(sim_data[idx]["ik"])
+        net.cell_response._ik_hh2.append(sim_data[idx]["ik_hh2"])
+        net.cell_response._ik_kca.append(sim_data[idx]["ik_kca"])
+        net.cell_response._ik_km.append(sim_data[idx]["ik_km"])
+        net.cell_response._ica_ca.append(sim_data[idx]["ica_ca"])
+        net.cell_response._ica_cat.append(sim_data[idx]["ica_cat"])
+        net.cell_response._il_hh2.append(sim_data[idx]["il_hh2"])
+        net.cell_response._i_ar.append(sim_data[idx]["i_ar"])
 
         # extracellular array
         for arr_name, arr in net.rec_arrays.items():
