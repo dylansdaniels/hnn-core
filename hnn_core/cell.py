@@ -879,22 +879,6 @@ class Cell:
                     self.ik[sec_name] = h.Vector()
                     self.ik[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ik)
 
-        # if record_ik:
-        #     # look through cell sections
-        #     for sec_name in self.ik:
-        #         # get the section object
-        #         nrn_sec = self._nrn_sections[sec_name]
-
-        #         # access the hh2 attribute on a specific segment
-        #         segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-        #         # confirm the segment has the hh2 attribute and that hh2 has
-        #         # the _ref_ik attribute
-        #         if hasattr(segment, 'hh2') and hasattr(segment.hh2, "_ref_ik"):
-        #             self.ik[sec_name] = h.Vector()
-        #             # record _ref_ik from the segment's hh2 mechanism
-        #             self.ik[sec_name].record(segment.hh2._ref_ik)
-
         # potassium (ik) currents, hh2 mechanism
         if record_ik_hh2 == "soma":
             self.ik_hh2 = dict.fromkeys(["soma"])
