@@ -1902,6 +1902,9 @@ class NetworkPlotter:
         Index of simulation trial plotted. Default: 0
     time_idx : int
         Index of time point plotted. Default: 0
+    cell_type_colors : dict
+        dictionary of cell_type and color to be used with
+        cell.plot_morphology()
     """
 
     def __init__(
@@ -1920,6 +1923,7 @@ class NetworkPlotter:
         zlim=(-300, 2200),
         trial_idx=0,
         time_idx=0,
+        cell_type_colors={},
     ):
         from matplotlib import colormaps
 
@@ -1954,6 +1958,7 @@ class NetworkPlotter:
         self._azim = azim
         self._trial_idx = trial_idx
         self._time_idx = time_idx
+        self._cell_type_colors = cell_type_colors
 
         # Check if Network object is simulated
         self.times, self._vsec_recorded = self._check_network_simulation()
@@ -2054,6 +2059,14 @@ class NetworkPlotter:
 
     def _init_network_plot(self):
         for cell_type in self.net.cell_types:
+
+            if cell_type in self._cell_type_colors.keys():
+                cell_color = self._cell_type_colors[cell_type]
+            elif 'default' in self._cell_type_colors.keys():
+                cell_color = self._cell_type_colors['default']
+            else:
+                cell_color = None
+
             gid_range = self.net.gid_ranges[cell_type]
             for gid_idx, gid in enumerate(gid_range):
                 cell = self.net.cell_types[cell_type]
@@ -2064,6 +2077,7 @@ class NetworkPlotter:
                 cell.plot_morphology(
                     ax=self.ax,
                     show=False,
+                    color=cell_color,
                     pos=pos,
                     xlim=self.xlim,
                     ylim=self.ylim,
