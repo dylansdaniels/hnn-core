@@ -780,6 +780,83 @@ class Cell:
         stim.amp = amplitude
         self.tonic_biases.append(stim)
 
+    def _init_currents(
+        self,
+        record_flag,
+        name,
+        section_names,
+        mech=None,
+        ref=None,
+    ):
+        """
+        Initialize current recordings for a given mechanism.
+
+        Parameters
+        ----------
+        record_flag : str or None
+            Identify which sections to record from
+            - "soma" : only the soma section
+            - "all"  : all sections in `section_names`
+            - None   : skip
+
+        name : str
+            The attribute name that will be created on `self` to hold the
+            recordings dictionary. E.g., passing "ina" would yield an attribute
+            that can be accessed with "self.ina"
+
+        section_names : list
+            List of available section names
+
+        mech : str or None
+            The mechanism name inside a section segment (e.g., "hh2")
+            If None, the current is recorded directly from the section
+            itself (from a top-level variable like "_ref_ina")
+
+        ref : str
+            The name of the hoc reference variable to record from (e.g., "_ref_ik")
+
+        Notes
+        -----
+        - This function attaches NEURON "h.Vector()" recorders to specific
+        variables in the model.
+        - After calling this function, "self.<name>" will be a dictionary mapping
+        section names to "h.Vector" objects that store the recorded currents.
+
+        """
+
+        # Create an attribute on self to hold the currents.
+        if record_flag == "soma":
+            setattr(self, name, dict.fromkeys(["soma"]))
+        elif record_flag == "all":
+            setattr(self, name, dict.fromkeys(section_names))
+        else:
+            return
+
+        currents = getattr(self, name)
+
+        # Loop over all sections
+        for sec_name in currents:
+            # Get the NEURON section object
+            nrn_sec = self._nrn_sections[sec_name]
+
+            # Choose the midpoint segment of the section as the recording site
+            seg = nrn_sec(0.5)
+
+            # If no mechanism is given, record directly from the segment
+            if mech is None:
+                if hasattr(seg, ref):
+                    # attach the h.Vector() recorder
+                    currents[sec_name] = h.Vector()
+                    currents[sec_name].record(getattr(seg, ref))
+
+            # If a mechanism is specified, first check that it exists on the segment,
+            # then check that is has the hoc reference variable
+            else:
+                if hasattr(seg, mech) and hasattr(getattr(seg, mech), ref):
+                    # attach the h.Vector() recorder
+                    currents[sec_name] = h.Vector()
+                    currents[sec_name].record(getattr(getattr(seg, mech), ref))
+
     def record(
         self,
         record_vsec=False,
@@ -855,183 +932,75 @@ class Cell:
                     self.ca[sec_name] = h.Vector()
                     self.ca[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_cai)
 
-        # sodium (ina) currents, aggregate
-        if record_ina == "soma":
-            self.ina = dict.fromkeys(["soma"])
-        elif record_ina == "all":
-            self.ina = dict.fromkeys(section_names)
+        self._init_currents(
+            record_ina,
+            "ina",
+            section_names,
+            ref="_ref_ina",
+        )
 
-        if record_ina:
-            for sec_name in self.ina:
-                if hasattr(self._nrn_sections[sec_name](0.5), "_ref_ina"):
-                    self.ina[sec_name] = h.Vector()
-                    self.ina[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ina)
+        self._init_currents(
+            record_ik,
+            "ik",
+            section_names,
+            ref="_ref_ik",
+        )
 
-        # potassium (ik) currents, aggregate
-        if record_ik == "soma":
-            self.ik = dict.fromkeys(["soma"])
-        elif record_ik == "all":
-            self.ik = dict.fromkeys(section_names)
+        self._init_currents(
+            record_ik_hh2,
+            "ik_hh2",
+            section_names,
+            mech="hh2",
+            ref="_ref_ik",
+        )
 
-        if record_ik:
-            for sec_name in self.ik:
-                if hasattr(self._nrn_sections[sec_name](0.5), "_ref_ik"):
-                    self.ik[sec_name] = h.Vector()
-                    self.ik[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_ik)
+        self._init_currents(
+            record_ik_kca,
+            "ik_kca",
+            section_names,
+            mech="kca",
+            ref="_ref_ik",
+        )
 
-        # potassium (ik) currents, hh2 mechanism
-        if record_ik_hh2 == "soma":
-            self.ik_hh2 = dict.fromkeys(["soma"])
-        elif record_ik_hh2 == "all":
-            self.ik_hh2 = dict.fromkeys(section_names)
+        self._init_currents(
+            record_ik_km,
+            "ik_km",
+            section_names,
+            mech="km",
+            ref="_ref_ik",
+        )
 
-        if record_ik_hh2:
-            # look through cell sections
-            for sec_name in self.ik_hh2:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
+        self._init_currents(
+            record_ica_ca,
+            "ica_ca",
+            section_names,
+            mech="ca",
+            ref="_ref_ica",
+        )
 
-                # access the hh2 attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
+        self._init_currents(
+            record_ica_cat,
+            "ica_cat",
+            section_names,
+            mech="cat",
+            ref="_ref_i",
+        )
 
-                # confirm the segment has the hh2 attribute and that hh2 has
-                # the _ref_ik attribute
-                if hasattr(segment, 'hh2') and hasattr(segment.hh2, "_ref_ik"):
-                    self.ik_hh2[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's hh2 mechanism
-                    self.ik_hh2[sec_name].record(segment.hh2._ref_ik)
+        self._init_currents(
+            record_il_hh2,
+            "il_hh2",
+            section_names,
+            mech="hh2",
+            ref="_ref_il",
+        )
 
-        # potassium (ik) currents, kca mechanism
-        if record_ik_kca == "soma":
-            self.ik_kca = dict.fromkeys(["soma"])
-        elif record_ik_kca == "all":
-            self.ik_kca = dict.fromkeys(section_names)
-
-        if record_ik_kca:
-            # look through cell sections
-            for sec_name in self.ik_kca:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the kca attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the kca attribute and that kca has
-                # the _ref_ik attribute
-                if hasattr(segment, 'kca') and hasattr(segment.kca, "_ref_ik"):
-                    self.ik_kca[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's kca mechanism
-                    self.ik_kca[sec_name].record(segment.kca._ref_ik)
-
-        # potassium (ik) currents, km mechanism
-        if record_ik_km == "soma":
-            self.ik_km = dict.fromkeys(["soma"])
-        elif record_ik_km == "all":
-            self.ik_km = dict.fromkeys(section_names)
-
-        if record_ik_km:
-            # look through cell sections
-            for sec_name in self.ik_km:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the km attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the km attribute and that km has
-                # the _ref_ik attribute
-                if hasattr(segment, 'km') and hasattr(segment.km, "_ref_ik"):
-                    self.ik_km[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's km mechanism
-                    self.ik_km[sec_name].record(segment.km._ref_ik)
-
-        # calcium currents, ca mechanism
-        if record_ica_ca == "soma":
-            self.ica_ca = dict.fromkeys(["soma"])
-        elif record_ica_ca == "all":
-            self.ica_ca = dict.fromkeys(section_names)
-
-        if record_ica_ca:
-            # look through cell sections
-            for sec_name in self.ica_ca:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the ca attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the ca attribute and that ca has
-                # the _ref_ik attribute
-                if hasattr(segment, 'ca') and hasattr(segment.ca, "_ref_ica"):
-                    self.ica_ca[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's ca mechanism
-                    self.ica_ca[sec_name].record(segment.ca._ref_ica)
-
-        # calcium currents, cat mechanism
-        if record_ica_cat == "soma":
-            self.ica_cat = dict.fromkeys(["soma"])
-        elif record_ica_cat == "all":
-            self.ica_cat = dict.fromkeys(section_names)
-
-        if record_ica_cat:
-            # look through cell sections
-            for sec_name in self.ica_cat:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the cat attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the cat attribute and that cat has
-                # the _ref_ik attribute
-                if hasattr(segment, 'cat') and hasattr(segment.cat, "_ref_i"):
-                    self.ica_cat[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's cat mechanism
-                    self.ica_cat[sec_name].record(segment.cat._ref_i)
-
-        # il currents, hh2 mechanism
-        if record_il_hh2 == "soma":
-            self.il_hh2 = dict.fromkeys(["soma"])
-        elif record_il_hh2 == "all":
-            self.il_hh2 = dict.fromkeys(section_names)
-
-        if record_il_hh2:
-            # look through cell sections
-            for sec_name in self.il_hh2:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the hh2 attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the hh2 attribute and that hh2 has
-                # the _ref_ik attribute
-                if hasattr(segment, 'hh2') and hasattr(segment.hh2, "_ref_il"):
-                    self.il_hh2[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's hh2 mechanism
-                    self.il_hh2[sec_name].record(segment.hh2._ref_il)
-
-        # ar currents, ar mechanism
-        if record_i_ar == "soma":
-            self.i_ar = dict.fromkeys(["soma"])
-        elif record_i_ar == "all":
-            self.i_ar = dict.fromkeys(section_names)
-
-        if record_i_ar:
-            # look through cell sections
-            for sec_name in self.i_ar:
-                # get the section object
-                nrn_sec = self._nrn_sections[sec_name]
-
-                # access the ar attribute on a specific segment
-                segment = nrn_sec(0.5) # 0.5 = to the middle segment of the section
-
-                # confirm the segment has the ar attribute and that ar has
-                # the _ref_ik attribute
-                if hasattr(segment, 'ar') and hasattr(segment.ar, "_ref_i"):
-                    self.i_ar[sec_name] = h.Vector()
-                    # record _ref_ik from the segment's ar mechanism
-                    self.i_ar[sec_name].record(segment.ar._ref_i)
+        self._init_currents(
+            record_i_ar,
+            "i_ar",
+            section_names,
+            mech="ar",
+            ref="_ref_i",
+        )
 
     def syn_create(self, secloc, e, tau1, tau2):
         """Create an h.Exp2Syn synapse.
