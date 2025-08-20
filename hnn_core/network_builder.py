@@ -109,68 +109,137 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
             if ca is not None:
                 ca_py[gid][sec_name] = ca.to_python()
 
+    # === NEW HELPER FUNCTION ===
+    def to_python_safe(obj):
+        """Convert an h.Vector or a dict of h.Vectors to Python lists."""
+        if obj is None:
+            return None
+        if isinstance(obj, dict):
+            py_dict = dict()
+            for key, vec in obj.items():
+                py_dict[key] = vec.to_python()
+            return py_dict
+        return obj.to_python()
+
+
+    # Apply to each current dictionary using for loops
     ina_py = dict()
     for gid, ina_dict in neuron_net._ina.items():
         ina_py[gid] = dict()
         for sec_name, ina in ina_dict.items():
-            if ina is not None:
-                ina_py[gid][sec_name] = ina.to_python()
+            ina_py[gid][sec_name] = to_python_safe(ina)
 
     ik_py = dict()
     for gid, ik_dict in neuron_net._ik.items():
         ik_py[gid] = dict()
         for sec_name, ik in ik_dict.items():
-            if ik is not None:
-                ik_py[gid][sec_name] = ik.to_python()
+            ik_py[gid][sec_name] = to_python_safe(ik)
 
     ik_hh2_py = dict()
     for gid, ik_hh2_dict in neuron_net._ik_hh2.items():
         ik_hh2_py[gid] = dict()
         for sec_name, ik_hh2 in ik_hh2_dict.items():
-            if ik_hh2 is not None:
-                ik_hh2_py[gid][sec_name] = ik_hh2.to_python()
+            ik_hh2_py[gid][sec_name] = to_python_safe(ik_hh2)
 
     ik_kca_py = dict()
     for gid, ik_kca_dict in neuron_net._ik_kca.items():
         ik_kca_py[gid] = dict()
         for sec_name, ik_kca in ik_kca_dict.items():
-            if ik_kca is not None:
-                ik_kca_py[gid][sec_name] = ik_kca.to_python()
+            ik_kca_py[gid][sec_name] = to_python_safe(ik_kca)
 
     ik_km_py = dict()
     for gid, ik_km_dict in neuron_net._ik_km.items():
         ik_km_py[gid] = dict()
         for sec_name, ik_km in ik_km_dict.items():
-            if ik_km is not None:
-                ik_km_py[gid][sec_name] = ik_km.to_python()
+            ik_km_py[gid][sec_name] = to_python_safe(ik_km)
 
     ica_ca_py = dict()
     for gid, ica_ca_dict in neuron_net._ica_ca.items():
         ica_ca_py[gid] = dict()
         for sec_name, ica_ca in ica_ca_dict.items():
-            if ica_ca is not None:
-                ica_ca_py[gid][sec_name] = ica_ca.to_python()
+            ica_ca_py[gid][sec_name] = to_python_safe(ica_ca)
 
     ica_cat_py = dict()
     for gid, ica_cat_dict in neuron_net._ica_cat.items():
         ica_cat_py[gid] = dict()
         for sec_name, ica_cat in ica_cat_dict.items():
-            if ica_cat is not None:
-                ica_cat_py[gid][sec_name] = ica_cat.to_python()
+            ica_cat_py[gid][sec_name] = to_python_safe(ica_cat)
 
     il_hh2_py = dict()
     for gid, il_hh2_dict in neuron_net._il_hh2.items():
         il_hh2_py[gid] = dict()
         for sec_name, il_hh2 in il_hh2_dict.items():
-            if il_hh2 is not None:
-                il_hh2_py[gid][sec_name] = il_hh2.to_python()
+            il_hh2_py[gid][sec_name] = to_python_safe(il_hh2)
 
     i_ar_py = dict()
     for gid, i_ar_dict in neuron_net._i_ar.items():
         i_ar_py[gid] = dict()
         for sec_name, i_ar in i_ar_dict.items():
-            if i_ar is not None:
-                i_ar_py[gid][sec_name] = i_ar.to_python()
+            i_ar_py[gid][sec_name] = to_python_safe(i_ar)
+
+
+    # ina_py = dict()
+    # for gid, ina_dict in neuron_net._ina.items():
+    #     ina_py[gid] = dict()
+    #     for sec_name, ina in ina_dict.items():
+    #         if ina is not None:
+    #             ina_py[gid][sec_name] = ina.to_python()
+
+    # ik_py = dict()
+    # for gid, ik_dict in neuron_net._ik.items():
+    #     ik_py[gid] = dict()
+    #     for sec_name, ik in ik_dict.items():
+    #         if ik is not None:
+    #             ik_py[gid][sec_name] = ik.to_python()
+
+    # ik_hh2_py = dict()
+    # for gid, ik_hh2_dict in neuron_net._ik_hh2.items():
+    #     ik_hh2_py[gid] = dict()
+    #     for sec_name, ik_hh2 in ik_hh2_dict.items():
+    #         if ik_hh2 is not None:
+    #             ik_hh2_py[gid][sec_name] = ik_hh2.to_python()
+
+    # ik_kca_py = dict()
+    # for gid, ik_kca_dict in neuron_net._ik_kca.items():
+    #     ik_kca_py[gid] = dict()
+    #     for sec_name, ik_kca in ik_kca_dict.items():
+    #         if ik_kca is not None:
+    #             ik_kca_py[gid][sec_name] = ik_kca.to_python()
+
+    # ik_km_py = dict()
+    # for gid, ik_km_dict in neuron_net._ik_km.items():
+    #     ik_km_py[gid] = dict()
+    #     for sec_name, ik_km in ik_km_dict.items():
+    #         if ik_km is not None:
+    #             ik_km_py[gid][sec_name] = ik_km.to_python()
+
+    # ica_ca_py = dict()
+    # for gid, ica_ca_dict in neuron_net._ica_ca.items():
+    #     ica_ca_py[gid] = dict()
+    #     for sec_name, ica_ca in ica_ca_dict.items():
+    #         if ica_ca is not None:
+    #             ica_ca_py[gid][sec_name] = ica_ca.to_python()
+
+    # ica_cat_py = dict()
+    # for gid, ica_cat_dict in neuron_net._ica_cat.items():
+    #     ica_cat_py[gid] = dict()
+    #     for sec_name, ica_cat in ica_cat_dict.items():
+    #         if ica_cat is not None:
+    #             ica_cat_py[gid][sec_name] = ica_cat.to_python()
+
+    # il_hh2_py = dict()
+    # for gid, il_hh2_dict in neuron_net._il_hh2.items():
+    #     il_hh2_py[gid] = dict()
+    #     for sec_name, il_hh2 in il_hh2_dict.items():
+    #         if il_hh2 is not None:
+    #             il_hh2_py[gid][sec_name] = il_hh2.to_python()
+
+    # i_ar_py = dict()
+    # for gid, i_ar_dict in neuron_net._i_ar.items():
+    #     i_ar_py[gid] = dict()
+    #     for sec_name, i_ar in i_ar_dict.items():
+    #         if i_ar is not None:
+    #             i_ar_py[gid][sec_name] = i_ar.to_python()
 
     dpl_data = np.c_[
         neuron_net._nrn_dipoles["L2_pyramidal"].as_numpy()

@@ -781,12 +781,7 @@ class Cell:
         self.tonic_biases.append(stim)
 
     def _init_currents(
-        self,
-        record_flag,
-        name,
-        section_names,
-        mech=None,
-        ref=None,
+        self, record_flag, name, section_names, mech=None, ref=None, per_segment=False
     ):
         """
         Initialize current recordings for a given mechanism.
@@ -815,6 +810,11 @@ class Cell:
         ref : str
             The name of the hoc reference variable to record from (e.g., "_ref_ik")
 
+        per_segment: bool
+            If True, record from every segment in the section
+                - keys will follow the format: "seg_x_0.500"
+            If False, record only from the midpoint (0.5)
+
         Notes
         -----
         - This function attaches NEURON "h.Vector()" recorders to specific
@@ -834,28 +834,96 @@ class Cell:
 
         currents = getattr(self, name)
 
-        # Loop over all sections
+        # loop over all sections
         for sec_name in currents:
-            # Get the NEURON section object
+            # get the NEURON section object
             nrn_sec = self._nrn_sections[sec_name]
 
-            # Choose the midpoint segment of the section as the recording site
-            seg = nrn_sec(0.5)
+            if per_segment:
+                # initialize dict for segment recordings
+                currents[sec_name] = {}
 
-            # If no mechanism is given, record directly from the segment
-            if mech is None:
-                if hasattr(seg, ref):
-                    # attach the h.Vector() recorder
-                    currents[sec_name] = h.Vector()
-                    currents[sec_name].record(getattr(seg, ref))
+                # initialize dict for staring segment metadata
+                # currents[sec_name]['segment_info'] = {}
 
-            # If a mechanism is specified, first check that it exists on the segment,
-            # then check that is has the hoc reference variable
+                # get generic endpoints for the section
+                # start = np.array([nrn_sec.x3d(0), nrn_sec.y3d(0), nrn_sec.z3d(0)])
+                # end = np.array([nrn_sec.x3d(1), nrn_sec.y3d(1), nrn_sec.z3d(1)])
+                #
+                # this does not take into account the actual positions based on
+                # cell id per, e.g., net.pos_dict["L5_pyramidal"]
+
+                # add generic start/end points to the segment metadata
+                # currents[sec_name]['segment_info']['start'] = start
+                # currents[sec_name]['segment_info']['end'] = end
+
+                # iterate over segments
+                for i, segment in enumerate(nrn_sec):
+                    # get absolute coordinates via linear interpolation using the
+                    # normalized position from segment.x
+                    # Example:
+                    #   with segment.x = 0.5 (halfway), and
+                    #   with     start = [0.0,   0.0, 141.0], and
+                    #   with       end = [-255.0, 0.0, 141.0]
+                    #   abs_pos = start + segment.x * (end - start)
+                    #           = [0.0, 0.0, 141.0] + 0.5 * [-255.0, 0.0, 0.0]
+                    #           = [-127.5, 0.0, 141.0]
+
+                    # abs_pos = start + segment.x * (end - start)
+                    # abs_x, abs_y, abs_z = abs_pos
+                    #
+                    # note that the normalized position can be calcuted directly
+                    # from the number of segments, e.g.:
+                    # nseg = 13
+                    # segment_positions = [(i - 0.5) / nseg for i in range(1, nseg + 1)]
+                    # for pos in segment_positions:
+                    #     print(pos)
+
+                    seg_key = f"seg_{i+1}"
+                    # currents[sec_name]['segment_info'][seg_key] = repr(segment.x)
+
+                    if mech is None:
+                        if hasattr(segment, ref):
+                            currents[sec_name][seg_key] = h.Vector()
+                            currents[sec_name][seg_key].record(
+                                getattr(
+                                    segment,
+                                    ref,
+                                )
+                            )
+                    else:
+                        if hasattr(segment, mech) and hasattr(
+                            getattr(segment, mech), ref
+                        ):
+                            currents[sec_name][seg_key] = h.Vector()
+                            currents[sec_name][seg_key].record(
+                                getattr(
+                                    getattr(
+                                        segment,
+                                        mech,
+                                    ),
+                                    ref,
+                                )
+                            )
+
             else:
-                if hasattr(seg, mech) and hasattr(getattr(seg, mech), ref):
-                    # attach the h.Vector() recorder
-                    currents[sec_name] = h.Vector()
-                    currents[sec_name].record(getattr(getattr(seg, mech), ref))
+                # Choose the midpoint segment of the section as the recording site
+                seg = nrn_sec(0.5)
+
+                # If no mechanism is given, record directly from the segment
+                if mech is None:
+                    if hasattr(seg, ref):
+                        # attach the h.Vector() recorder
+                        currents[sec_name] = h.Vector()
+                        currents[sec_name].record(getattr(seg, ref))
+
+                # If a mechanism is specified, first check that it exists on the
+                # segment, then check that is has the hoc reference variable
+                else:
+                    if hasattr(seg, mech) and hasattr(getattr(seg, mech), ref):
+                        # attach the h.Vector() recorder
+                        currents[sec_name] = h.Vector()
+                        currents[sec_name].record(getattr(getattr(seg, mech), ref))
 
     def record(
         self,
@@ -937,6 +1005,7 @@ class Cell:
             "ina",
             section_names,
             ref="_ref_ina",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -944,6 +1013,7 @@ class Cell:
             "ik",
             section_names,
             ref="_ref_ik",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -952,6 +1022,7 @@ class Cell:
             section_names,
             mech="hh2",
             ref="_ref_ik",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -960,6 +1031,7 @@ class Cell:
             section_names,
             mech="kca",
             ref="_ref_ik",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -968,6 +1040,7 @@ class Cell:
             section_names,
             mech="km",
             ref="_ref_ik",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -976,6 +1049,7 @@ class Cell:
             section_names,
             mech="ca",
             ref="_ref_ica",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -984,6 +1058,7 @@ class Cell:
             section_names,
             mech="cat",
             ref="_ref_i",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -992,6 +1067,7 @@ class Cell:
             section_names,
             mech="hh2",
             ref="_ref_il",
+            per_segment=True,
         )
 
         self._init_currents(
@@ -1000,6 +1076,7 @@ class Cell:
             section_names,
             mech="ar",
             ref="_ref_i",
+            per_segment=True,
         )
 
     def syn_create(self, secloc, e, tau1, tau2):

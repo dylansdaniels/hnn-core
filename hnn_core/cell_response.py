@@ -489,77 +489,103 @@ class CellResponse(object):
             trial = dict((str(key), val) for key, val in trial.items())
             cell_response_data["ca"].append(trial)
 
-        # sodium agg
-        ina_data = self.ina
-        cell_response_data["ina"] = list()
-        for trial in ina_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ina"].append(trial)
+        def _keys_to_strings(obj):
+            """Recursively convert dict keys to str for HDF5 serialization."""
+            if isinstance(obj, dict):
+                return {str(k): _keys_to_strings(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [_keys_to_strings(v) for v in obj]
+            else:
+                return obj
 
-        # potassium agg
-        ik_data = self.ik
-        cell_response_data["ik"] = list()
-        for trial in ik_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ik"].append(trial)
+        current_names = [
+            "ina",
+            "ik",
+            "ik_hh2",
+            "ik_kca",
+            "ik_km",
+            "ica_ca",
+            "ica_cat",
+            "il_hh2",
+            "i_ar",
+        ]
 
-        # potassium hh2
-        ik_hh2_data = self.ik_hh2
-        cell_response_data["ik_hh2"] = list()
-        for trial in ik_hh2_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ik_hh2"].append(trial)
+        for name in current_names:
+            data = getattr(self, name)
+            # Directly stringify everything in one shot
+            cell_response_data[name] = _keys_to_strings(data)
 
-        # potassium kca
-        ik_kca_data = self.ik_kca
-        cell_response_data["ik_kca"] = list()
-        for trial in ik_kca_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ik_kca"].append(trial)
+        # # sodium agg
+        # ina_data = self.ina
+        # cell_response_data["ina"] = list()
+        # for trial in ina_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ina"].append(trial)
 
-        # potassium km
-        ik_km_data = self.ik_km
-        cell_response_data["ik_km"] = list()
-        for trial in ik_km_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ik_km"].append(trial)
+        # # potassium agg
+        # ik_data = self.ik
+        # cell_response_data["ik"] = list()
+        # for trial in ik_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ik"].append(trial)
 
-        # calcium ca
-        ica_ca_data = self.ica_ca
-        cell_response_data["ica_ca"] = list()
-        for trial in ica_ca_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ica_ca"].append(trial)
+        # # potassium hh2
+        # ik_hh2_data = self.ik_hh2
+        # cell_response_data["ik_hh2"] = list()
+        # for trial in ik_hh2_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ik_hh2"].append(trial)
 
-        # calcium cat
-        ica_cat_data = self.ica_cat
-        cell_response_data["ica_cat"] = list()
-        for trial in ica_cat_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["ica_cat"].append(trial)
+        # # potassium kca
+        # ik_kca_data = self.ik_kca
+        # cell_response_data["ik_kca"] = list()
+        # for trial in ik_kca_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ik_kca"].append(trial)
 
-        # leak current hh2
-        il_hh2_data = self.il_hh2
-        cell_response_data["il_hh2"] = list()
-        for trial in il_hh2_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["il_hh2"].append(trial)
+        # # potassium km
+        # ik_km_data = self.ik_km
+        # cell_response_data["ik_km"] = list()
+        # for trial in ik_km_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ik_km"].append(trial)
 
-        # anomalous rectifier ar
-        i_ar_data = self.i_ar
-        cell_response_data["i_ar"] = list()
-        for trial in i_ar_data:
-            # Turn `int` gid keys into string values for hdf5 format
-            trial = dict((str(key), val) for key, val in trial.items())
-            cell_response_data["i_ar"].append(trial)
+        # # calcium ca
+        # ica_ca_data = self.ica_ca
+        # cell_response_data["ica_ca"] = list()
+        # for trial in ica_ca_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ica_ca"].append(trial)
+
+        # # calcium cat
+        # ica_cat_data = self.ica_cat
+        # cell_response_data["ica_cat"] = list()
+        # for trial in ica_cat_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["ica_cat"].append(trial)
+
+        # # leak current hh2
+        # il_hh2_data = self.il_hh2
+        # cell_response_data["il_hh2"] = list()
+        # for trial in il_hh2_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["il_hh2"].append(trial)
+
+        # # anomalous rectifier ar
+        # i_ar_data = self.i_ar
+        # cell_response_data["i_ar"] = list()
+        # for trial in i_ar_data:
+        #     # Turn `int` gid keys into string values for hdf5 format
+        #     trial = dict((str(key), val) for key, val in trial.items())
+        #     cell_response_data["i_ar"].append(trial)
 
         cell_response_data["times"] = self.times
         return cell_response_data
