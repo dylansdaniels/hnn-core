@@ -403,6 +403,8 @@ class Cell:
         self.ica_cat = dict()
         self.il_hh2 = dict()
         self.i_ar = dict()
+        self.i_cap = dict()
+        self.i_mem = dict()
         # insert iclamp
         self.list_IClamp = list()
         self._gid = None
@@ -503,6 +505,8 @@ class Cell:
         cell_data["ica_cat"] = self.ica_cat
         cell_data["il_hh2"] = self.il_hh2
         cell_data["i_ar"] = self.i_ar
+        cell_data["i_cap"] = self.i_cap
+        cell_data["i_mem"] = self.i_mem
         cell_data["tonic_biases"] = self.tonic_biases
         return cell_data
 
@@ -781,7 +785,13 @@ class Cell:
         self.tonic_biases.append(stim)
 
     def _init_currents(
-        self, record_flag, name, section_names, mech=None, ref=None, per_segment=False
+        self,
+        record_flag,
+        name,
+        section_names,
+        mech=None,
+        ref=None,
+        per_segment=False,
     ):
         """
         Initialize current recordings for a given mechanism.
@@ -879,7 +889,7 @@ class Cell:
                     # for pos in segment_positions:
                     #     print(pos)
 
-                    seg_key = f"seg_{i+1}"
+                    seg_key = f"seg_{i + 1}"
                     # currents[sec_name]['segment_info'][seg_key] = repr(segment.x)
 
                     if mech is None:
@@ -925,6 +935,33 @@ class Cell:
                         currents[sec_name] = h.Vector()
                         currents[sec_name].record(getattr(getattr(seg, mech), ref))
 
+    def _setup_imem_recording(self):
+        """Initialize per-segment i_mem pointers and data vector."""
+        all_segments = []
+        for sec in self._nrn_sections.values():
+            for seg in sec:
+                all_segments.append(seg)
+
+        n_segs = len(all_segments)
+        self._imem_ptrvec = h.PtrVector(n_segs)
+        self._imem_vec = h.Vector(n_segs)
+
+        for idx, seg in enumerate(all_segments):
+            self._imem_ptrvec.pset(idx, seg._ref_i_membrane_)
+
+        # Optional: store per-segment h.Vectors for direct access like _init_currents
+        self.i_mem = {}
+        for sec_name, sec in self._nrn_sections.items():
+            self.i_mem[sec_name] = {}
+            for i, seg in enumerate(sec):
+                seg_key = f"seg_{i + 1}"
+                self.i_mem[sec_name][seg_key] = h.Vector()
+                self.i_mem[sec_name][seg_key].record(seg._ref_i_membrane_)
+
+    def _gather_imem_data(self):
+        """Gather the PtrVector values into h.Vector after each CVode step."""
+        self._imem_ptrvec.gather(self._imem_vec)
+
     def record(
         self,
         record_vsec=False,
@@ -939,6 +976,8 @@ class Cell:
         record_ica_cat=False,
         record_il_hh2=False,
         record_i_ar=False,
+        record_i_cap=False,
+        record_i_mem=False,
     ):
         """Record current and voltage from all sections
 
@@ -1078,6 +1117,29 @@ class Cell:
             ref="_ref_i",
             per_segment=True,
         )
+
+        self._init_currents(
+            record_i_cap,
+            "i_cap",
+            section_names,
+            mech=None,
+            ref="_ref_i_cap",
+            per_segment=True,
+        )
+
+        # self._init_currents(
+        #     record_i_mem,
+        #     "i_mem",
+        #     section_names,
+        #     mech=None,
+        #     ref="_ref_i_membrane_",
+        #     per_segment=True,
+        # )
+
+        if record_i_mem:
+            self._setup_imem_recording()
+
+
 
     def syn_create(self, secloc, e, tau1, tau2):
         """Create an h.Exp2Syn synapse.

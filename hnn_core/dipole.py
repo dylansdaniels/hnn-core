@@ -32,6 +32,8 @@ def simulate_dipole(
     record_ica_cat=False,
     record_il_hh2=False,
     record_i_ar=False,
+    record_i_cap=False,
+    record_i_mem=False,
     postproc=False,
 ):
     """Simulate a dipole given the experiment parameters.
@@ -148,6 +150,12 @@ def simulate_dipole(
 
     _check_option("record_i_ar", record_i_ar, ["all", "soma", False])
     net._params["record_i_ar"] = record_i_ar
+
+    _check_option("record_i_cap", record_i_cap, ["all", "soma", False])
+    net._params["record_i_cap"] = record_i_cap
+
+    _check_option("record_i_mem", record_i_mem, ["all", "soma", False])
+    net._params["record_i_mem"] = record_i_mem
 
     net._tstop = tstop
 

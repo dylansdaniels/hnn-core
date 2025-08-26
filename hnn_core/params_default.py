@@ -143,6 +143,8 @@ def get_params_default(nprox=2, ndist=1):
         "record_ica_cat": 0, # whether to record Ca currents (cat)
         "record_il_hh2": 0, # whether to record leaky currents (hh2)
         "record_i_ar": 0, # whether to record AR currents (ar)
+        "record_i_cap": 0, # whether to capacitive currents
+        "record_i_mem": 0,  # whether to record total transmembrane currents
         # numerics
         # N_trials of 1 means that seed is set by rank
         "N_trials": 1,

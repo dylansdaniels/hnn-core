@@ -133,6 +133,8 @@ class CellResponse(object):
         self._ica_cat = list()
         self._il_hh2 = list()
         self._i_ar = list()
+        self._i_cap = list()
+        self._i_mem = list()
 
         if times is not None:
             if not isinstance(times, (list, np.ndarray)):
@@ -169,6 +171,8 @@ class CellResponse(object):
             and self._ica_cat == other._ica_cat
             and self._il_hh2 == other._il_hh2
             and self._i_ar == other._i_ar
+            and self._i_cap == other._i_cap
+            and self._i_mem == other._i_mem
             and self.vsec == other.vsec
             and self.isec == other.isec
             and self.ca == other.ca
@@ -181,6 +185,8 @@ class CellResponse(object):
             and self.ica_cat == other.ica_cat
             and self.il_hh2 == other.il_hh2
             and self.i_ar == other.i_ar
+            and self.i_cap == other.i_cap
+            and self.i_mem == other.i_mem
         )
 
     @property
@@ -239,6 +245,8 @@ class CellResponse(object):
             "ica_cat": self._ica_cat,
             "il_hh2": self._il_hh2,
             "i_ar": self._i_ar,
+            "i_cap": self._i_cap,
+            "i_mem": self._i_mem,
         }
 
     @property
@@ -508,6 +516,8 @@ class CellResponse(object):
             "ica_cat",
             "il_hh2",
             "i_ar",
+            "i_cap",
+            "i_mem",
         ]
 
         for name in current_names:

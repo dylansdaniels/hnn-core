@@ -177,6 +177,18 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         for sec_name, i_ar in i_ar_dict.items():
             i_ar_py[gid][sec_name] = to_python_safe(i_ar)
 
+    i_cap_py = dict()
+    for gid, i_cap_dict in neuron_net._i_cap.items():
+        i_cap_py[gid] = dict()
+        for sec_name, i_cap in i_cap_dict.items():
+            i_cap_py[gid][sec_name] = to_python_safe(i_cap)
+
+    i_mem_py = dict()
+    for gid, i_mem_dict in neuron_net._i_mem.items():
+        i_mem_py[gid] = dict()
+        for sec_name, i_mem in i_mem_dict.items():
+            i_mem_py[gid][sec_name] = to_python_safe(i_mem)
+
 
     # ina_py = dict()
     # for gid, ina_dict in neuron_net._ina.items():
@@ -271,6 +283,8 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         "ica_cat": ica_cat_py,
         "il_hh2": il_hh2_py,
         "i_ar": i_ar_py,
+        "i_cap": i_cap_py,
+        "i_mem": i_mem_py,
         "rec_data": rec_arr_py,
         "rec_times": rec_times_py,
         "times": times.to_python(),
@@ -453,6 +467,8 @@ class NetworkBuilder(object):
         self._ica_cat = dict()
         self._il_hh2 = dict()
         self._i_ar = dict()
+        self._i_cap = dict()
+        self._i_mem = dict()
 
         self._nrn_rec_arrays = dict()
         self._nrn_rec_callbacks = list()
@@ -462,10 +478,23 @@ class NetworkBuilder(object):
         self._expose_imem = False
         if len(self.net.rec_arrays) > 0:
             self._expose_imem = True
+        if net._params['record_i_mem']:
+            self._expose_imem = True
 
         self._rank = 0
 
         self._build()
+
+    def _register_imem_callback(self):
+        """Register a CVode callback to gather all cells' i_mem at each step."""
+        def _gather_all_cells_imem():
+            for cell in self._cells:
+                if hasattr(cell, "_gather_imem_data"):
+                    cell._gather_imem_data()
+
+        cvode = h.CVode()
+        cvode.use_fast_imem(1)
+        cvode.extra_scatter_gather(0, _gather_all_cells_imem)
 
     def _build(self):
         """Building the network in NEURON."""
@@ -500,6 +529,8 @@ class NetworkBuilder(object):
         record_ica_cat=self.net._params["record_ica_cat"]
         record_il_hh2=self.net._params["record_il_hh2"]
         record_i_ar=self.net._params["record_i_ar"]
+        record_i_cap=self.net._params["record_i_cap"]
+        record_i_mem=self.net._params["record_i_mem"]
         self._create_cells_and_drives(
             threshold=self.net._params["threshold"],
             record_vsec=record_vsec,
@@ -514,6 +545,8 @@ class NetworkBuilder(object):
             record_ica_cat=record_ica_cat,
             record_il_hh2=record_il_hh2,
             record_i_ar=record_i_ar,
+            record_i_cap=record_i_cap,
+            record_i_mem=record_i_mem,
         )
 
         self.state_init()
@@ -600,6 +633,8 @@ class NetworkBuilder(object):
         record_ica_cat=False,
         record_il_hh2=False,
         record_i_ar=False,
+        record_i_cap=False,
+        record_i_mem=False,
     ):
         """Parallel create cells AND external drives
 
@@ -649,6 +684,8 @@ class NetworkBuilder(object):
                     record_ica_cat,
                     record_il_hh2,
                     record_i_ar,
+                    record_i_cap,
+                    record_i_mem,
                 )
 
                 # this call could belong in init of a _Cell (with threshold)?
@@ -665,6 +702,25 @@ class NetworkBuilder(object):
                 drive_cell = _ArtificialCell(event_times, threshold, gid=gid)
                 _PC.cell(drive_cell.gid, drive_cell.nrn_netcon)
                 self._drive_cells.append(drive_cell)
+
+        # -----------------------------
+        # i_mem recording setup
+        # -----------------------------
+        if record_i_mem:
+            # initialize PtrVector/Vector for each cell
+            for cell in self._cells:
+                if hasattr(cell, "_setup_imem_recording"):
+                    cell._setup_imem_recording()
+
+            # global callback for CVode
+            def _register_imem_callback():
+                for cell in self._cells:
+                    if hasattr(cell, "_gather_imem_data"):
+                        cell._gather_imem_data()
+
+            cvode = h.CVode()
+            cvode.use_fast_imem(1)  # ensure fast i_mem recording is active
+            cvode.extra_scatter_gather(0, _register_imem_callback)
 
     # connections:
     # this NODE is aware of its cells as targets
@@ -795,6 +851,8 @@ class NetworkBuilder(object):
             self._ica_cat[cell.gid] = cell.ica_cat
             self._il_hh2[cell.gid] = cell.il_hh2
             self._i_ar[cell.gid] = cell.i_ar
+            self._i_cap[cell.gid] = cell.i_cap
+            self._i_mem[cell.gid] = cell.i_mem
 
         # reduce across threads
         for nrn_dpl in self._nrn_dipoles.values():
@@ -815,6 +873,8 @@ class NetworkBuilder(object):
         ica_cat_list = _PC.py_gather(self._ica_cat, 0)
         il_hh2_list = _PC.py_gather(self._il_hh2, 0)
         i_ar_list = _PC.py_gather(self._i_ar, 0)
+        i_cap_list = _PC.py_gather(self._i_cap, 0)
+        i_mem_list = _PC.py_gather(self._i_mem, 0)
 
         # combine spiking data from each proc
         spike_times_list = _PC.py_gather(self._spike_times, 0)
@@ -850,6 +910,10 @@ class NetworkBuilder(object):
                 self._il_hh2.update(il_hh2)
             for i_ar in i_ar_list:
                 self._i_ar.update(i_ar)
+            for i_cap in i_cap_list:
+                self._i_cap.update(i_cap)
+            for i_mem in i_mem_list:
+                self._i_mem.update(i_mem)
 
         _PC.barrier()  # get all nodes to this place before continuing
 
