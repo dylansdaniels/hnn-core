@@ -1,6 +1,6 @@
-# %% [markdown] #########
-### Setup
-# %% ####################
+# %% [markdown] ###########################################################
+## Setup
+# %% ######################################################################
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,258 +15,53 @@ from hnn_core.network_builder import load_custom_mechanisms
 from hnn_core.network_models import add_erp_drives_to_jones_model
 from hnn_core.params import _short_name
 
-# %%
-# need to expose imem somehow
-# import hnn_core.network_builder as nb
-# nb._create_parallel_context(expose_imem=True)
-# print(nb._CVODE)
-
-# from hnn_core.network_builder import _create_parallel_context
-
-# This initializes the ParallelContext and CVode
-# _create_parallel_context(expose_imem=True)
-
-
-# %% [markdown] #########
-### Simulation
-# %% ####################
+# %% [markdown] ###########################################################
+## Simulation
+# %% ######################################################################
 
 net = jones_2009_model()
 add_erp_drives_to_jones_model(net)
 
 n_trials = 1
 
-with JoblibBackend(8):
-    dpls = simulate_dipole(
-        net,
-        tstop=170.0,
-        n_trials=n_trials,
-        record_isec="all",
-        record_ina="all",
-        record_ik_hh2="all",
-        record_ik_kca="all",
-        record_ik_km="all",
-        record_ica_ca="all",
-        record_ica_cat="all",
-        record_il_hh2="all",
-        record_i_ar="all",
-        record_i_cap="all",
-        record_i_mem="all",
-    )
+if "dpls" not in locals():
+    with JoblibBackend(8):
+        dpls = simulate_dipole(
+            net,
+            tstop=170.0,
+            n_trials=n_trials,
+            record_isec="all",
+            record_ina="all",
+            record_ik_hh2="all",
+            record_ik_kca="all",
+            record_ik_km="all",
+            record_ica_ca="all",
+            record_ica_cat="all",
+            record_il_hh2="all",
+            record_i_ar="all",
+            record_i_cap="all",
+            record_i_mem="all",
+        )
+
+smooth_it = False
 
 scaling_factor = 3000
 for dpl in dpls:
     dpl.scale(scaling_factor)
 
-# window_len, scaling_factor = 30, 3000
-# for dpl in dpls:
-#     dpl.smooth(window_len).scale(scaling_factor)
+if smooth_it:
+    window_len, scaling_factor = 30, 3000
+    for dpl in dpls:
+        dpl.smooth(window_len).scale(scaling_factor)
 
 dpl = dpls[0]
 dpl_plot = dpl.plot(
     layer=["L5"]
 )
 
-
-# %% [markdown] #########
-### Post processing
-# %% ####################
-
-trial = 0
-ion_channel = "ina"
-cell_type = "L5_pyramidal"
-
-
-def postproc_tm_currents(
-        trial=0,
-        ion_channel=None,
-        cell_type="L5_pyramidal",
-    ):
-    dipole = None
-    # --- Step 1: Build a template L5 pyramidal cell to get relative endpoints ---
-    load_custom_mechanisms()
-    template_cell = pyramidal(cell_name=_short_name(cell_type))
-    template_cell.build(sec_name_apical="apical_trunk")
-
-    # Collect section endpoints (relative to soma)
-    rel_endpoints = {}
-    for sec_name, sec in template_cell._nrn_sections.items():
-        start = np.array([sec.x3d(0), sec.y3d(0), sec.z3d(0)])
-        end = np.array(
-            [sec.x3d(sec.n3d() - 1), sec.y3d(sec.n3d() - 1), sec.z3d(sec.n3d() - 1)]
-        )
-        rel_endpoints[sec_name] = (start, end)
-
-    # --- Step 2: Compute dipole ---
-    for gid in net.gid_ranges[cell_type]:
-        start_index = net.gid_ranges[cell_type][0]
-        soma_pos = np.array(
-            net.pos_dict[cell_type][gid - start_index]
-        )  # absolute soma coordinates
-
-        cell_data = net.cell_response.ionic_currents[ion_channel][trial][gid]
-
-        for sec_name, segs in cell_data.items():
-            # shift relative endpoints to absolute coordinates
-            start_rel, end_rel = rel_endpoints[sec_name]
-            start = start_rel + soma_pos
-            end = end_rel + soma_pos
-
-            nseg = len(segs)
-            seg_positions = [(i - 0.5) / nseg for i in range(1, nseg + 1)]
-
-            for pos, (seg_key, vec) in zip(seg_positions, segs.items()):
-                abs_pos = start + pos * (end - start)
-                z_i = abs_pos[2]  # only z-coordinate contributes
-
-                I_t = np.array(vec)  # shape: (n_timepoints,)
-                contrib = I_t * z_i
-
-                if dipole is None:
-                    dipole = contrib.copy()
-                else:
-                    dipole += contrib
-    return dipole
-
-# %% ####################
-
-# dipole = postproc_tm_currents(
-#     ion_channel="i_cap"
-# )
-
-# plt.plot(dipole)
-
-# %% [markdown] #########
-### Post process all channels
-# %% ####################
-
-# all_tm_channels=[
-#     "ina",
-#     "ik_hh2",
-#     "ik_kca",
-#     "ik_km",
-#     "ica_ca",
-#     "ica_cat",
-#     "il_hh2",
-#     "i_ar",
-#     # "i_cap",
-#     # "i_mem",
-# ]
-
-# tm_dipoles = {}
-
-# for channel in all_tm_channels:
-#     tm_dipoles[channel] = postproc_tm_currents(
-#         trial=0,
-#         ion_channel=channel,
-#         cell_type="L5_pyramidal",
-#     )
-
-# %% ####################
-
-# for key in tm_dipoles.keys():
-#     plt.plot(
-#         tm_dipoles[key],
-#         label=key,
-#     )
-
-# plt.legend()
-
-# %% ####################
-
-# fig, ax = plt.subplots(
-#     nrows=2,
-#     ncols=1,
-#     sharex=True,
-#     figsize=(8,10),
-# )
-
-# agg = None
-
-# for key in tm_dipoles.keys():
-#     data = tm_dipoles[key].copy()
-#     if agg is None:
-#         agg = data
-#     else:
-#         agg += data
-
-# ax[0].plot(
-#     dpl.times,
-#     agg,
-# )
-
-# dpl_plot = dpl.plot(
-#     layer=["L5"],
-#     ax=ax[1]
-# )
-
-# # %% ####################
-
-# tmp_icap = postproc_tm_currents(
-#         trial=0,
-#         ion_channel="i_cap",
-#         cell_type="L5_pyramidal",
-#     )
-
-# plt.plot(
-#     dpl.times,
-#     agg-tmp_icap,
-# )
-
-# %% [markdown] #########
-### segment areas
-# %% ####################
-
-def show_seg_areas():
-    """
-    Note: areas for segment 0 are 0... does this pose an issue?
-
-    Section: apical_trunk
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: apical_1
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: apical_2
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: apical_tuft
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: apical_oblique
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: basal_1
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    Section: basal_2
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: basal_3
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    ...
-    Section: soma
-    Segment 0: area = 0.00 µm² = 0.000000 cm²
-    """
-    template_cell = pyramidal(cell_name=_short_name("L5_pyramidal"))
-    template_cell.build(sec_name_apical="apical_trunk")
-
-    for sec_name, sec in template_cell._nrn_sections.items():
-        print(f"Section: {sec_name}")
-        nseg = sec.nseg
-        for i in range(nseg):
-            seg = sec(i / nseg)
-            area_um2 = seg.area()  # µm²
-            area_cm2 = area_um2 * 1e-8  # cm²
-            print(f"  Segment {i}: area = {area_um2:.2f} µm² = {area_cm2:.6f} cm²")
-    return
-
-show_seg_areas()
-
-
-
-# %% [markdown] #########
-### Version 2
-# %% ####################
+# %% [markdown] ###########################################################
+## Postprocessing Version 2
+# %% ######################################################################
 
 def postproc_tm_currents_v2(
         trial=0,
@@ -443,8 +238,6 @@ dpl_plot = dpl.plot(
 )
 
 
-# %%
-
 # %% ####################
 test = postproc_tm_currents_v2(
     cell_type="L2_pyramidal"
@@ -466,6 +259,55 @@ dpl_plot = dpl.plot(
     layer=["L2"],
     ax=ax[1]
 )
+
+# %% [markdown] #########
+### segment areas
+# %% ####################
+
+def show_seg_areas():
+    """
+    Note: areas for segment 0 are 0... does this pose an issue?
+
+    Section: apical_trunk
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: apical_1
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: apical_2
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: apical_tuft
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: apical_oblique
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: basal_1
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    Section: basal_2
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: basal_3
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    ...
+    Section: soma
+    Segment 0: area = 0.00 µm² = 0.000000 cm²
+    """
+    template_cell = pyramidal(cell_name=_short_name("L5_pyramidal"))
+    template_cell.build(sec_name_apical="apical_trunk")
+
+    for sec_name, sec in template_cell._nrn_sections.items():
+        print(f"Section: {sec_name}")
+        nseg = sec.nseg
+        for i in range(nseg):
+            seg = sec(i / nseg)
+            area_um2 = seg.area()  # µm²
+            area_cm2 = area_um2 * 1e-8  # cm²
+            print(f"  Segment {i}: area = {area_um2:.2f} µm² = {area_cm2:.6f} cm²")
+    return
+
+show_seg_areas()
 
 # %% [markdown] #########
 ### View synaptic currents
@@ -500,9 +342,9 @@ def plot_isec_by_section(
 plot_isec_by_section()
 
 
-# %% [markdown] #########
+# %% [markdown] ###########################################################
 ### Version 3
-# %% ####################
+# %% ######################################################################
 
 
 def postproc_tm_currents_v3(
@@ -628,9 +470,9 @@ if run_v3:
 
 # %%
 
-# %% [markdown] #########
+# %% [markdown] ###########################################################
 ### Version 4
-# %% ####################
+# %% ######################################################################
 
 def postproc_tm_currents_v4(
         trial=0,
@@ -768,9 +610,9 @@ if run_v4:
         ax=ax[1]
     )
 
-# %% [markdown] #########
+# %% [markdown] ###########################################################
 ### Version 5
-# %% ####################
+# %% ######################################################################
 
 
 def postproc_tm_currents_v5(
@@ -906,9 +748,152 @@ if run_v5:
         ax=ax[1]
     )
 
-# %% [markdown] #########
-### Extras
-# %% ####################
+# %% [markdown] ###########################################################
+## Depracations
+###########################################################################
+
+# %% [markdown] #######################################
+### Post processing version 1
+# %% ##################################################
+
+trial = 0
+ion_channel = "ina"
+cell_type = "L5_pyramidal"
+
+
+def postproc_tm_currents(
+        trial=0,
+        ion_channel=None,
+        cell_type="L5_pyramidal",
+    ):
+    dipole = None
+    # --- Step 1: Build a template L5 pyramidal cell to get relative endpoints ---
+    load_custom_mechanisms()
+    template_cell = pyramidal(cell_name=_short_name(cell_type))
+    template_cell.build(sec_name_apical="apical_trunk")
+
+    # Collect section endpoints (relative to soma)
+    rel_endpoints = {}
+    for sec_name, sec in template_cell._nrn_sections.items():
+        start = np.array([sec.x3d(0), sec.y3d(0), sec.z3d(0)])
+        end = np.array(
+            [sec.x3d(sec.n3d() - 1), sec.y3d(sec.n3d() - 1), sec.z3d(sec.n3d() - 1)]
+        )
+        rel_endpoints[sec_name] = (start, end)
+
+    # --- Step 2: Compute dipole ---
+    for gid in net.gid_ranges[cell_type]:
+        start_index = net.gid_ranges[cell_type][0]
+        soma_pos = np.array(
+            net.pos_dict[cell_type][gid - start_index]
+        )  # absolute soma coordinates
+
+        cell_data = net.cell_response.ionic_currents[ion_channel][trial][gid]
+
+        for sec_name, segs in cell_data.items():
+            # shift relative endpoints to absolute coordinates
+            start_rel, end_rel = rel_endpoints[sec_name]
+            start = start_rel + soma_pos
+            end = end_rel + soma_pos
+
+            nseg = len(segs)
+            seg_positions = [(i - 0.5) / nseg for i in range(1, nseg + 1)]
+
+            for pos, (seg_key, vec) in zip(seg_positions, segs.items()):
+                abs_pos = start + pos * (end - start)
+                z_i = abs_pos[2]  # only z-coordinate contributes
+
+                I_t = np.array(vec)  # shape: (n_timepoints,)
+                contrib = I_t * z_i
+
+                if dipole is None:
+                    dipole = contrib.copy()
+                else:
+                    dipole += contrib
+    return dipole
+
+test_procproc_tm_currents = False
+
+if test_procproc_tm_currents:
+
+    dipole = postproc_tm_currents(
+        ion_channel="i_cap"
+    )
+
+    plt.plot(dipole)
+
+    ## Post process all channels
+    all_tm_channels=[
+        "ina",
+        "ik_hh2",
+        "ik_kca",
+        "ik_km",
+        "ica_ca",
+        "ica_cat",
+        "il_hh2",
+        "i_ar",
+        # "i_cap",
+        # "i_mem",
+    ]
+
+    tm_dipoles = {}
+
+    for channel in all_tm_channels:
+        tm_dipoles[channel] = postproc_tm_currents(
+            trial=0,
+            ion_channel=channel,
+            cell_type="L5_pyramidal",
+        )
+
+    for key in tm_dipoles.keys():
+        plt.plot(
+            tm_dipoles[key],
+            label=key,
+        )
+
+    plt.legend()
+
+    fig, ax = plt.subplots(
+        nrows=2,
+        ncols=1,
+        sharex=True,
+        figsize=(8,10),
+    )
+
+    agg = None
+
+    for key in tm_dipoles.keys():
+        data = tm_dipoles[key].copy()
+        if agg is None:
+            agg = data
+        else:
+            agg += data
+
+    ax[0].plot(
+        dpl.times,
+        agg,
+    )
+
+    dpl_plot = dpl.plot(
+        layer=["L5"],
+        ax=ax[1]
+    )
+
+    tmp_icap = postproc_tm_currents(
+            trial=0,
+            ion_channel="i_cap",
+            cell_type="L5_pyramidal",
+        )
+
+    plt.plot(
+        dpl.times,
+        tmp_icap,
+    )
+
+
+# %% [markdown] ###########################################################
+## Extras
+# %% ######################################################################
 
 # import pickle
 # with open('tmp.pkl', 'wb') as f:
