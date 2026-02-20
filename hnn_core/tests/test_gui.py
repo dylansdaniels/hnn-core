@@ -42,6 +42,7 @@ matplotlib.use("agg")
 hnn_core_root = Path(__file__).parents[1]
 assets_path = Path(hnn_core_root, "tests", "assets")
 
+
 def wait_until(condition_func, timeout=5, interval=0.2):
     start = time.time()
     while time.time() - start < timeout:
@@ -49,6 +50,7 @@ def wait_until(condition_func, timeout=5, interval=0.2):
             return True
         time.sleep(interval)
     return False
+
 
 @pytest.fixture
 def setup_gui():
@@ -828,7 +830,9 @@ def test_dipole_data_overlay(setup_gui):
     gui.widget_ntrials.value = 2
     gui.run_button.click()
 
-    assert wait_until(lambda: len(gui.simulation_data['default']['dpls']) > 0, timeout=10)
+    assert wait_until(
+        lambda: len(gui.simulation_data["default"]["dpls"]) > 0, timeout=10
+    )
 
     # Load data
     file_path = assets_path / "test_default.csv"
@@ -851,7 +855,9 @@ def test_dipole_data_overlay(setup_gui):
         "plot",
     )
 
-    assert wait_until(lambda: len(gui.simulation_data['default']['dpls']) > 0, timeout=10)
+    assert wait_until(
+        lambda: len(gui.simulation_data["default"]["dpls"]) > 0, timeout=10
+    )
 
     ax = gui.viz_manager.figs[figid].axes[1]
 
