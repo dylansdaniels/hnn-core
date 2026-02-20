@@ -4,42 +4,51 @@
 import codecs
 import io
 import json
+import os
+import time
+from pathlib import Path
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 import traitlets
-import os
+from IPython.display import IFrame
+from ipywidgets import Tab, Text, link
 
-from pathlib import Path
 from hnn_core import Dipole, Network, simulate_dipole
 from hnn_core.gui import HNNGUI
 from hnn_core.gui._viz_manager import (
     _idx2figname,
-    _plot_types,
     _no_overlay_plot_types,
+    _plot_types,
     unlink_relink,
 )
 from hnn_core.gui.gui import (
     _init_network_from_widgets,
     _prepare_upload_file,
     _update_nested_dict,
-    serialize_simulation,
     serialize_config,
+    serialize_simulation,
 )
-from hnn_core.network import pick_connection, _compare_lists
-from hnn_core.parallel_backends import requires_mpi4py, requires_psutil
 from hnn_core.hnn_io import (
     dict_to_network,
     read_network_configuration,
 )
-from IPython.display import IFrame
-from ipywidgets import Tab, Text, link
+from hnn_core.network import _compare_lists, pick_connection
+from hnn_core.parallel_backends import requires_mpi4py, requires_psutil
 
 matplotlib.use("agg")
 hnn_core_root = Path(__file__).parents[1]
 assets_path = Path(hnn_core_root, "tests", "assets")
 
+def wait_until(condition_func, timeout=5, interval=0.2):
+    start = time.time()
+    while time.time() - start < timeout:
+        if condition_func():
+            return True
+        time.sleep(interval)
+    return False
 
 @pytest.fixture
 def setup_gui():
@@ -819,6 +828,8 @@ def test_dipole_data_overlay(setup_gui):
     gui.widget_ntrials.value = 2
     gui.run_button.click()
 
+    assert wait_until(lambda: len(gui.simulation_data['default']['dpls']) > 0, timeout=10)
+
     # Load data
     file_path = assets_path / "test_default.csv"
     gui._simulate_upload_data(file_path)
@@ -839,6 +850,9 @@ def test_dipole_data_overlay(setup_gui):
         {"data_to_compare": "test_default"},
         "plot",
     )
+
+    assert wait_until(lambda: len(gui.simulation_data['default']['dpls']) > 0, timeout=10)
+
     ax = gui.viz_manager.figs[figid].axes[1]
 
     # Check number of lines
