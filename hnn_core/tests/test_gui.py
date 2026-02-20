@@ -1287,7 +1287,13 @@ def test_default_scaling(setup_gui):
     new_scaling = 1000
     gui.widget_default_scaling.value = new_scaling
 
+    assert wait_until(lambda: gui.fig_default_params["default_scaling"] == new_scaling)
+
     gui.run_button.click()
+
+    assert wait_until(
+        lambda: gui.viz_manager.fig_default_params["default_scaling"] == new_scaling
+    )
 
     # check that the new default scaling value is set everywhere
     gui_scaling_value = gui.fig_default_params["default_scaling"]

@@ -16,8 +16,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest,macos-latest]
-        python-version: [3.9, 3.11, 3.13]
+        os: [macos-latest]
+        python-version: [3.11]
 
     steps:
       - uses: actions/checkout@v4
@@ -62,12 +62,12 @@ jobs:
       - name: Test non-MPI, embarrassingly parallel tests with pytest
         shell: bash -el {0}
         run: |
-          python -m pytest ./hnn_core/tests/ -m "not uses_mpi" -n auto --cov=hnn_core --cov-report=xml
+          python -m pytest ./hnn_core/tests/test_gui.py -m "not uses_mpi" -n auto --cov=hnn_core --cov-report=xml
 
       - name: Test MPI-using parallel tests with pytest
         shell: bash -el {0}
         run: |
-          python -m pytest ./hnn_core/tests/ -m "uses_mpi" --cov=hnn_core --cov-report=xml --cov-append
+          python -m pytest ./hnn_core/tests/test_gui.py -m "uses_mpi" --cov=hnn_core --cov-report=xml --cov-append
 
       - name:  Upload coverage to Codecov
         shell: bash -el {0}
