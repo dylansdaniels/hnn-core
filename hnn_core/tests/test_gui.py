@@ -55,6 +55,7 @@ def wait_until(condition_func, timeout=5, interval=0.2):
 @pytest.fixture
 def setup_gui():
     gui = HNNGUI(network_configuration=assets_path / "jones2009_3x3_drives.json")
+    gui.widget_backend_selection.value = "Joblib"
     gui.compose()
     gui.widget_dt.value = 0.5  # speed up tests
     gui.widget_tstop.value = 70  # speed up tests
