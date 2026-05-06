@@ -822,30 +822,23 @@ class Cell:
                 - "soma" : only the soma
                 - "all"  : all sections in `section_names`
                 - None   : skip
-
         name : str
             the attribute name to hold the recordings; e.g., for name="ina",
             the recording would be accessed with "self.ina"
-
         section_names : list
             list of available section names
-
         mech : str or None
             The mechanism inside a section segment (e.g., "hh2") to use for recording
             If None, the current is recorded directly from the section
             itself (from the top-level variable)
-
         ref : str
             The name of the hoc reference variable to record from (e.g., "_ref_ina"
             for sodium)
-
         per_segment: bool
             If True, record from every segment in the section
                 - keys will follow the format: "seg_x_0.500"
             If False, record only from the midpoint (0.5)
-
         """
-
         # create an attribute on self to hold the currents
         if record_flag == "soma":
             setattr(self, name, dict.fromkeys(["soma"]))
@@ -912,6 +905,25 @@ class Cell:
                     #    - the mechanism exists on the segment
                     #    _ the ref variable exists for the segment mechanism
                     else:
+                        '''
+                        mech_obj = getattr(segment, mech, None) # temp variable to store the mechanism object
+                        # e.g., mech = "hh2" exists on that segment, then mech_obj = segment.hh2, else None
+
+                        rec_target = None
+
+                        # First try mechanism-level reference, e.g. segment.hh2._ref_il
+                        if mech_obj is not None and hasattr(mech_obj, ref):
+                            rec_target = getattr(mech_obj, ref)
+
+                        # Fallback to segment-level reference, e.g. segment._ref_ina
+                        elif hasattr(segment, ref):
+                            rec_target = getattr(segment, ref)
+
+                        if rec_target is not None:
+                            currents[sec_name][seg_key] = h.Vector()
+                            currents[sec_name][seg_key].record(rec_target)
+                        '''
+                        
                         if hasattr(segment, mech) and hasattr(
                             getattr(segment, mech), ref
                         ):
@@ -926,6 +938,18 @@ class Cell:
                                     ref,
                                 )
                             )
+                        
+                        '''
+                        if self.gid == 50 and mech == "hh2" and sec_name == "soma" and seg_key == "seg_1":
+                            print(
+                                f"gid={self.gid} {sec_name}/{seg_key}: "
+                                f"hh2._ref_il={hasattr(segment.hh2, '_ref_il') if hasattr(segment, 'hh2') else 'NA'}, "
+                                f"hh2._ref_ina={hasattr(segment.hh2, '_ref_ina') if hasattr(segment, 'hh2') else 'NA'}, "
+                                f"seg._ref_ina={hasattr(segment, '_ref_ina')}, "
+                                f"hh2._ref_ik={hasattr(segment.hh2, '_ref_ik') if hasattr(segment, 'hh2') else 'NA'}, "
+                                f"seg._ref_ik={hasattr(segment, '_ref_ik')}"
+                            )
+                        '''
             # if not recording at the segment level, record from the
             # midpoint of the section
             else:
@@ -992,6 +1016,7 @@ class Cell:
         record_vsec=False,
         record_isec=False,
         record_ca=False,
+        record_imem=None,
         # [new]
         record_agg_i_mem=False,
         record_agg_ina=False,
@@ -1015,15 +1040,26 @@ class Cell:
             Option to record voltages from all sections ('all'), or just
             the soma ('soma'). Default: False.
         record_isec : 'all' | 'soma' | False
-            Option to record voltages from all sections ('all'), or just
+            Option to record currents from all sections ('all'), or just
             the soma ('soma'). Default: False.
         record_ca : 'all' | 'soma' | False
             Option to record calcium concentration from all sections ('all'),
             or just the soma ('soma'). Default: False.
+        record_agg_i_mem :
+            Option to record total transmembrane current from all segments.
+            Default: False.
+        record_imem : dict or None
+            Grouped transmembrane recording configuration. If provided, its 
+            values override the individual transmembrane recording arguments.
+        #record_agg_ina, record_agg_ik, record_agg_i_cap, record_ina_hh2, 
+        #record_ik_hh2, record_ik_kca, record_ik_km, record_ica_ca, 
+        #record_ica_cat, record_il_hh2, record_i_ar : 'all' | 'soma' | False
+        #    Option to record currents from all sections ('all'), or just
+        #    the soma ('soma'). Default: False.
         """
 
         section_names = list(self.sections.keys())
-
+        
         # Logic checks if just recording soma, sections, or both
         if record_vsec == "soma":
             self.vsec = dict.fromkeys(["soma"])
@@ -1067,13 +1103,27 @@ class Cell:
                     self.ca[sec_name] = h.Vector()
                     self.ca[sec_name].record(self._nrn_sections[sec_name](0.5)._ref_cai)
 
-        # [new]
-        # transmembrane currents
-        if record_agg_i_mem:
+        if record_imem is None:
+            record_imem = {
+                "agg_i_mem": record_agg_i_mem,
+                "agg_ina": record_agg_ina,
+                "agg_ik": record_agg_ik,
+                "agg_i_cap": record_agg_i_cap,
+                "ina_hh2": record_ina_hh2,
+                "ik_hh2": record_ik_hh2,
+                "ik_kca": record_ik_kca,
+                "ik_km": record_ik_km,
+                "ica_ca": record_ica_ca,
+                "ica_cat": record_ica_cat,
+                "il_hh2": record_il_hh2,
+                "i_ar": record_i_ar,
+            }
+
+        if record_imem["agg_i_mem"]:
             self._setup_imem_recording()
 
         self._record_transmembrane_currents(
-            record_agg_ina,
+            record_imem["agg_ina"],
             "agg_ina",
             section_names,
             ref="_ref_ina",
@@ -1081,7 +1131,7 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_agg_ik,
+            record_imem["agg_ik"],
             "agg_ik",
             section_names,
             ref="_ref_ik",
@@ -1089,25 +1139,24 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_agg_i_cap,
-            "agg_i_cap",
+            record_imem["agg_i_cap"],
+            "agg_i_cap",            
             section_names,
-            mech=None,
             ref="_ref_i_cap",
             per_segment=True,
         )
 
         self._record_transmembrane_currents(
-            record_ina_hh2,
+            record_imem["ina_hh2"],
             "ina_hh2",
             section_names,
             mech="hh2",
             ref="_ref_ina",
             per_segment=True,
-        )
+        )   
 
         self._record_transmembrane_currents(
-            record_ik_hh2,
+            record_imem["ik_hh2"],
             "ik_hh2",
             section_names,
             mech="hh2",
@@ -1116,16 +1165,16 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_ik_kca,
+            record_imem["ik_kca"],
             "ik_kca",
             section_names,
-            mech="kca",
+            mech="kca", 
             ref="_ref_ik",
             per_segment=True,
         )
 
         self._record_transmembrane_currents(
-            record_ik_km,
+            record_imem["ik_km"],
             "ik_km",
             section_names,
             mech="km",
@@ -1134,16 +1183,16 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_ica_ca,
+            record_imem["ica_ca"],
             "ica_ca",
             section_names,
             mech="ca",
-            ref="_ref_ica",
+            ref="_ref_ica", 
             per_segment=True,
-        )
+        )  
 
         self._record_transmembrane_currents(
-            record_ica_cat,
+            record_imem["ica_cat"],
             "ica_cat",
             section_names,
             mech="cat",
@@ -1152,7 +1201,7 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_il_hh2,
+            record_imem["il_hh2"],
             "il_hh2",
             section_names,
             mech="hh2",
@@ -1161,14 +1210,13 @@ class Cell:
         )
 
         self._record_transmembrane_currents(
-            record_i_ar,
+            record_imem["i_ar"],
             "i_ar",
             section_names,
             mech="ar",
             ref="_ref_i",
             per_segment=True,
         )
-        # [end new]
 
     def syn_create(self, secloc, e, tau1, tau2):
         """Create an h.Exp2Syn synapse.
