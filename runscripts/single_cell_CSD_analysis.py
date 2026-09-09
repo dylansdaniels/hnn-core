@@ -44,7 +44,8 @@ with open('runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc_no
 # to run simulation: use Undestand_CSD_contributions_v3.py
 '''
 
-pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc.pkl'
+pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc_noreccon_allactive_subthreshold.pkl'
+#pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc.pkl'
 #pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc_norecconn_all_passive_excsoma.pkl'
 #pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc_norecconn_all_passive.pkl'
 #pkl_path = 'runscripts/data/sim_results_dt000625_withmembranepot_newelect_calc_norecconn.pkl'
