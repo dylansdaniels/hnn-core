@@ -395,6 +395,10 @@ class Cell:
         self.ca = dict()
         # [new]
         # initialize dicts to store transmenbrane (tm) current recordings
+        self.agg_hh2 = dict()
+        self.agg_ica = dict()
+        self.agg_i_non_specific = dict()
+        self.prec_i_cap = dict()
         self.agg_i_mem = dict()  # aggregate tm currents
         self.agg_ina = dict()  # aggregate tm sodium
         self.agg_ik = dict()  # aggregate tm potassium
@@ -500,6 +504,10 @@ class Cell:
         cell_data["isec"] = self.isec
         cell_data["ca"] = self.ca
         # [new]
+        cell_data["agg_hh2"] = self.agg_hh2
+        cell_data["agg_ica"] = self.agg_ica
+        cell_data["agg_i_non_specific"] = self.agg_i_non_specific
+        cell_data["prec_i_cap"] = self.prec_i_cap
         cell_data["agg_i_mem"] = self.agg_i_mem
         cell_data["agg_ina"] = self.agg_ina
         cell_data["agg_ik"] = self.agg_ik
@@ -898,7 +906,20 @@ class Cell:
 
                     # if no mechanism is given, record directly from the segment
                     if mech is None:
-                        if hasattr(segment, ref):
+                        # Special handling for _ref_i (non-specific aggregate)
+                        if ref == "_ref_i":
+                            try:
+                                # Attempt to access the pointer.
+                                # If it doesn't exist, NEURON raises AttributeError.
+                                ptr = getattr(segment, ref)
+                                currents[sec_name][seg_key] = h.Vector()
+                                currents[sec_name][seg_key].record(ptr)
+                            except AttributeError:
+                                # This segment has no non-specific mechanisms
+                                # (like Basket cells)
+                                # We skip recording; the sum will treat this as 0.0
+                                pass
+                        elif hasattr(segment, ref):
                             # attach the h.Vector() recorder
                             currents[sec_name][seg_key] = h.Vector()
                             currents[sec_name][seg_key].record(
@@ -933,10 +954,28 @@ class Cell:
 
                 # if no mechanism is given, record directly from the segment
                 if mech is None:
-                    if hasattr(seg, ref):
+                    # Special handling for _ref_i (non-specific aggregate)
+                    if ref == "_ref_i":
+                        try:
+                            # Attempt to access the pointer.
+                            # If it doesn't exist, NEURON raises AttributeError.
+                            ptr = getattr(segment, ref)
+                            currents[sec_name][seg_key] = h.Vector()
+                            currents[sec_name][seg_key].record(ptr)
+                        except AttributeError:
+                            # This segment has no non-specific mechanisms
+                            # (like Basket cells)
+                            # We skip recording; the sum will treat this as 0.0
+                            pass
+                    elif hasattr(segment, ref):
                         # attach the h.Vector() recorder
-                        currents[sec_name] = h.Vector()
-                        currents[sec_name].record(getattr(seg, ref))
+                        currents[sec_name][seg_key] = h.Vector()
+                        currents[sec_name][seg_key].record(
+                            getattr(
+                                segment,
+                                ref,
+                            )
+                        )
 
                 # if a mechanism is specified, record from the mechanism
                 # if the conditions are met:
@@ -967,8 +1006,13 @@ class Cell:
         self._imem_ptrvec = h.PtrVector(n_segs)
         self._imem_vec = h.Vector(n_segs)
 
+        # NEW: icap vectors for high-precision validation
+        self._icap_ptrvec = h.PtrVector(n_segs)
+        self._icap_vec = h.Vector(n_segs)
+
         for idx, seg in enumerate(all_segments):
             self._imem_ptrvec.pset(idx, seg._ref_i_membrane_)
+            self._icap_ptrvec.pset(idx, seg._ref_i_cap)
 
         # store per-segment h.Vectors for direct access
         self.agg_i_mem = {}
@@ -979,11 +1023,21 @@ class Cell:
                 self.agg_i_mem[sec_name][seg_key] = h.Vector()
                 self.agg_i_mem[sec_name][seg_key].record(seg._ref_i_membrane_)
 
+        # storage for icap
+        self.prec_i_cap = {}
+        for sec_name, sec in self._nrn_sections.items():
+            self.prec_i_cap[sec_name] = {}
+            for i, seg in enumerate(sec):
+                seg_key = f"seg_{i + 1}"
+                self.prec_i_cap[sec_name][seg_key] = h.Vector()
+                self.prec_i_cap[sec_name][seg_key].record(seg._ref_i_cap)
+
     def _gather_imem_data(self):
         """
         Gathers the PtrVector values into h.Vector after each CVode step.
         """
         self._imem_ptrvec.gather(self._imem_vec)
+        self._icap_ptrvec.gather(self._icap_vec)
 
     # [end new]
 
@@ -993,6 +1047,10 @@ class Cell:
         record_isec=False,
         record_ca=False,
         # [new]
+        record_agg_hh2=False,
+        record_agg_ica=False,
+        record_agg_i_non_specific=False,
+        record_prec_i_cap=False,
         record_agg_i_mem=False,
         record_agg_ina=False,
         record_agg_ik=False,
@@ -1069,6 +1127,34 @@ class Cell:
 
         # [new]
         # transmembrane currents
+        # aggregate hh2
+        self._record_transmembrane_currents(
+            record_agg_hh2,
+            "agg_hh2",
+            section_names,
+            ref="_ref_ihh2",
+            per_segment=True,
+        )
+
+        # Aggregate Calcium
+        self._record_transmembrane_currents(
+            record_agg_ica,
+            "agg_ica",
+            section_names,
+            ref="_ref_ica",  # Sum of all mechanisms writing to USEION ca
+            per_segment=True,
+        )
+
+        # Aggregate Non-Specific
+        self._record_transmembrane_currents(
+            record_agg_i_non_specific,
+            "agg_i_non_specific",
+            section_names,
+            mech=None,
+            ref="_ref_i",    # Sum of all NONSPECIFIC_CURRENT declarations
+            per_segment=True,
+        )
+
         if record_agg_i_mem:
             self._setup_imem_recording()
 

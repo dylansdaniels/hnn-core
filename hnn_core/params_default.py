@@ -135,6 +135,10 @@ def get_params_default(nprox=2, ndist=1):
         "record_isec": 0,  # whether to record currents
         "record_ca": 0,  # whether to record calcium concentration
         # [new]
+        "record_agg_hh2": 0,
+        "record_agg_ica": 0,
+        "record_agg_i_non_specific": 0,
+        "record_prec_i_cap": 0,
         "record_agg_i_mem": 0,  # whether to record total currents
         "record_agg_ina": 0,  # whether to record aggregate sodium currents
         "record_agg_ik": 0,  # whether to record aggregate potassium currents

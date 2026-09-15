@@ -125,6 +125,31 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         return obj.to_python()
 
     # apply helper fxn to each transmembrane current to convert h vectors to lists
+
+    agg_hh2_py = dict()
+    for gid, agg_hh2_dict in neuron_net._agg_hh2.items():
+        agg_hh2_py[gid] = dict()
+        for sec_name, agg_hh2 in agg_hh2_dict.items():
+            agg_hh2_py[gid][sec_name] = hvecs_to_lists(agg_hh2)
+
+    agg_ica_py = dict()
+    for gid, agg_ica_dict in neuron_net._agg_ica.items():
+        agg_ica_py[gid] = dict()
+        for sec_name, agg_ica in agg_ica_dict.items():
+            agg_ica_py[gid][sec_name] = hvecs_to_lists(agg_ica)
+
+    agg_i_non_specific_py = dict()
+    for gid, agg_i_non_specific_dict in neuron_net._agg_i_non_specific.items():
+        agg_i_non_specific_py[gid] = dict()
+        for sec_name, agg_i_non_specific in agg_i_non_specific_dict.items():
+            agg_i_non_specific_py[gid][sec_name] = hvecs_to_lists(agg_i_non_specific)
+
+    prec_i_cap_py = dict()
+    for gid, prec_i_cap_dict in neuron_net._prec_i_cap.items():
+        prec_i_cap_py[gid] = dict()
+        for sec_name, prec_i_cap in prec_i_cap_dict.items():
+            prec_i_cap_py[gid][sec_name] = hvecs_to_lists(prec_i_cap)
+
     agg_i_mem_py = dict()
     for gid, agg_i_mem_dict in neuron_net._agg_i_mem.items():
         agg_i_mem_py[gid] = dict()
@@ -241,6 +266,10 @@ def _simulate_single_trial(net, tstop, dt, trial_idx):
         "isec": isec_py,
         "ca": ca_py,
         # [new]
+        "agg_hh2": agg_hh2_py,
+        "agg_ica": agg_ica_py,
+        "agg_i_non_specific": agg_i_non_specific_py,
+        "prec_i_cap": prec_i_cap_py,
         "agg_i_mem": agg_i_mem_py,
         "agg_ina": agg_ina_py,
         "agg_ik": agg_ik_py,
@@ -430,6 +459,10 @@ class NetworkBuilder(object):
         self._isec = dict()
         self._ca = dict()
         # [new]
+        self._agg_hh2 = dict()
+        self._agg_ica = dict()
+        self._agg_i_non_specific = dict()
+        self._prec_i_cap = dict()
         self._agg_i_mem = dict()  # aggregate tm currents
         self._agg_ina = dict()  # aggregate tm sodium
         self._agg_ik = dict()  # aggregate tm potassium
@@ -504,6 +537,10 @@ class NetworkBuilder(object):
         record_isec = self.net._params["record_isec"]
         record_ca = self.net._params["record_ca"]
         # [new]
+        record_agg_hh2 = self.net._params["record_agg_hh2"]
+        record_agg_ica = self.net._params["record_agg_ica"]
+        record_agg_i_non_specific = self.net._params["record_agg_i_non_specific"]
+        record_prec_i_cap = self.net._params["record_prec_i_cap"]
         record_agg_i_mem = self.net._params["record_agg_i_mem"]
         record_agg_ina = self.net._params["record_agg_ina"]
         record_agg_ik = self.net._params["record_agg_ik"]
@@ -523,6 +560,10 @@ class NetworkBuilder(object):
             record_isec=record_isec,
             record_ca=record_ca,
             # [new]
+            record_agg_hh2=record_agg_hh2,
+            record_agg_ica=record_agg_ica,
+            record_agg_i_non_specific=record_agg_i_non_specific,
+            record_prec_i_cap=record_prec_i_cap,
             record_agg_i_mem=record_agg_i_mem,
             record_agg_ina=record_agg_ina,
             record_agg_ik=record_agg_ik,
@@ -614,6 +655,10 @@ class NetworkBuilder(object):
         record_isec=False,
         record_ca=False,
         # [new]
+        record_agg_hh2=False,
+        record_agg_ica=False,
+        record_agg_i_non_specific=False,
+        record_prec_i_cap=False,
         record_agg_i_mem=False,
         record_agg_ina=False,
         record_agg_ik=False,
@@ -670,6 +715,10 @@ class NetworkBuilder(object):
                     record_isec,
                     record_ca,
                     # [new]
+                    record_agg_hh2,
+                    record_agg_ica,
+                    record_agg_i_non_specific,
+                    record_prec_i_cap,
                     record_agg_i_mem,
                     record_agg_ina,
                     record_agg_ik,
@@ -841,6 +890,10 @@ class NetworkBuilder(object):
             self._isec[cell.gid] = cell.isec
             self._ca[cell.gid] = cell.ca
             # [new]
+            self._agg_hh2[cell.gid] = cell.agg_hh2
+            self._agg_ica[cell.gid] = cell.agg_ica
+            self._agg_i_non_specific[cell.gid] = cell.agg_i_non_specific
+            self._prec_i_cap[cell.gid] = cell.prec_i_cap
             self._agg_i_mem[cell.gid] = cell.agg_i_mem
             self._agg_ina[cell.gid] = cell.agg_ina
             self._agg_ik[cell.gid] = cell.agg_ik
@@ -866,6 +919,10 @@ class NetworkBuilder(object):
         isec_list = _PC.py_gather(self._isec, 0)
         ca_list = _PC.py_gather(self._ca, 0)
         # [new]
+        agg_hh2_list = _PC.py_gather(self._agg_hh2, 0)
+        agg_ica_list = _PC.py_gather(self._agg_ica, 0)
+        agg_i_non_specific_list = _PC.py_gather(self._agg_i_non_specific, 0)
+        prec_i_cap_list = _PC.py_gather(self._prec_i_cap, 0)
         agg_i_mem_list = _PC.py_gather(self._agg_i_mem, 0)
         agg_ina_list = _PC.py_gather(self._agg_ina, 0)
         agg_ik_list = _PC.py_gather(self._agg_ik, 0)
@@ -897,6 +954,14 @@ class NetworkBuilder(object):
             for ca in ca_list:
                 self._ca.update(ca)
             # [new]
+            for agg_hh2 in agg_hh2_list:
+                self._agg_hh2.update(agg_hh2)
+            for agg_ica in agg_ica_list:
+                self._agg_ica.update(agg_ica)
+            for agg_i_non_specific in agg_i_non_specific_list:
+                self._agg_i_non_specific.update(agg_i_non_specific)
+            for prec_i_cap in prec_i_cap_list:
+                self._prec_i_cap.update(prec_i_cap)
             for agg_i_mem in agg_i_mem_list:
                 self._agg_i_mem.update(agg_i_mem)
             for agg_ina in agg_ina_list:

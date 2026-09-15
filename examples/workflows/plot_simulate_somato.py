@@ -1,8 +1,11 @@
+# %% [markdown]
+
 """
 ================================================
 04. From MEG sensor-space data to HNN simulation
 ================================================
 
+# %% [markdown]
 This example demonstrates how to calculate an inverse solution of the median
 nerve evoked response potential (ERP) in S1 from the MNE somatosensory dataset,
 and then simulate a biophysical model network that reproduces the observed
@@ -20,12 +23,15 @@ studies [1]_, [2]_.
 
 # sphinx_gallery_thumbnail_number = 2
 
+# %% [markdown]
 ###############################################################################
 # First, we will import the packages needed for computing the inverse solution
 # from the MNE somatosensory dataset. `MNE`_ (and its dependency `NiBabel`_)
 # can be installed with ``pip install mne nibabel``
 # The somatosensory dataset can be downloaded by
 # importing ``somato`` from ``mne.datasets``.
+
+# %%
 import os.path as op
 import matplotlib.pyplot as plt
 
@@ -33,8 +39,11 @@ import mne
 from mne.datasets import somato
 from mne.minimum_norm import apply_inverse, make_inverse_operator
 
+# %% [markdown]
 ###############################################################################
 # Now we set the the path of the ``somato`` dataset for subject ``'01'``.
+
+# %%
 data_path = somato.data_path()
 subject = '01'
 task = 'somato'
@@ -44,9 +53,11 @@ fwd_fname = op.join(data_path, 'derivatives', 'sub-{}'.format(subject),
                     'sub-{}_task-{}-fwd.fif'.format(subject, task))
 subjects_dir = op.join(data_path, 'derivatives', 'freesurfer', 'subjects')
 
+# %% [markdown]
 ###############################################################################
 # Then, we load the raw data and estimate the inverse operator.
 
+# %% ``
 # Read and band-pass filter the raw data
 raw = mne.io.read_raw_fif(raw_fname, preload=True)
 l_freq, h_freq = 1, 40

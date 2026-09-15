@@ -24,6 +24,10 @@ def simulate_dipole(
     record_isec=False,
     record_ca=False,
     # [new]
+    record_agg_hh2=False,
+    record_agg_ica=False,
+    record_agg_i_non_specific=False,
+    record_prec_i_cap=False,
     record_agg_i_mem=False,
     record_agg_ina=False,
     record_agg_ik=False,
@@ -124,6 +128,20 @@ def simulate_dipole(
 
     _check_option("record_ca", record_ca, ["all", "soma", False])
     net._params["record_ca"] = record_ca
+
+    _check_option("record_agg_hh2", record_agg_hh2, ["all", "soma", False])
+    net._params["record_agg_hh2"] = record_agg_hh2
+
+    _check_option("record_agg_ica", record_agg_ica, ["all", "soma", False])
+    net._params["record_agg_ica"] = record_agg_ica
+
+    _check_option(
+        "record_agg_i_non_specific", record_agg_i_non_specific, ["all", "soma", False]
+    )
+    net._params["record_agg_i_non_specific"] = record_agg_i_non_specific
+
+    _check_option("record_prec_i_cap", record_prec_i_cap, ["all", "soma", False])
+    net._params["record_prec_i_cap"] = record_prec_i_cap
 
     _check_option("record_agg_i_mem", record_agg_i_mem, ["all", "soma", False])
     net._params["record_agg_i_mem"] = record_agg_i_mem

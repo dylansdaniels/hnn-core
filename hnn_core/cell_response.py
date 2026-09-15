@@ -128,6 +128,10 @@ class CellResponse(object):
 
         # [new]
         # initialize lists to store transmenbrane (tm) current recordings
+        self._agg_hh2 = list()
+        self._agg_ica = list()
+        self._agg_i_non_specific = list()
+        self._prec_i_cap = list()
         self._agg_i_mem = list()  # aggregate tm currents
         self._agg_ina = list()  # aggregate tm sodium
         self._agg_ik = list()  # aggregate tm potassium
@@ -166,6 +170,10 @@ class CellResponse(object):
             and self._spike_gids == other._spike_gids
             and self._spike_types == other._spike_types
             # [new]
+            and self._agg_hh2 == other._agg_hh2
+            and self._agg_ica == other._agg_ica
+            and self._agg_i_non_specific == other._agg_i_non_specific
+            and self._prec_i_cap == other._prec_i_cap
             and self._agg_i_mem == other._agg_i_mem
             and self._agg_ina == other._agg_ina
             and self._agg_ik == other._agg_ik
@@ -183,6 +191,10 @@ class CellResponse(object):
             and self._isec == other._isec
             and self._ca == other._ca
             # [new]
+            and self.agg_hh2 == other.agg_hh2
+            and self.agg_ica == other.agg_ica
+            and self.agg_i_non_specific == other.agg_i_non_specific
+            and self.prec_i_cap == other.prec_i_cap
             and self.agg_i_mem == other.agg_i_mem
             and self.agg_ina == other.agg_ina
             and self.agg_ik == other.agg_ik
@@ -249,6 +261,10 @@ class CellResponse(object):
     @property
     def transmembrane_currents(self):
         return {
+            "agg_hh2": self._agg_hh2,
+            "agg_ica": self._agg_ica,
+            "agg_i_non_specific": self._agg_i_non_specific,
+            "prec_i_cap": self._prec_i_cap,
             "agg_i_mem": self._agg_i_mem,
             "agg_ina": self._agg_ina,
             "agg_ik": self._agg_ik,
@@ -541,6 +557,10 @@ class CellResponse(object):
                 return obj
 
         transmembrane_currents_keys = [
+            "agg_hh2",
+            "agg_ica",
+            "agg_i_non_specific",
+            "prec_i_cap",
             "agg_i_mem",
             "agg_ina",
             "agg_ik",

@@ -56,6 +56,10 @@ def _gather_trial_data(sim_data, net, n_trials, postproc):
         net.cell_response._isec.append(sim_data[idx]["isec"])
         net.cell_response._ca.append(sim_data[idx]["ca"])
         # [new]
+        net.cell_response._agg_hh2.append(sim_data[idx]["agg_hh2"])
+        net.cell_response._agg_ica.append(sim_data[idx]["agg_ica"])
+        net.cell_response._agg_i_non_specific.append(sim_data[idx]["agg_i_non_specific"])
+        net.cell_response._prec_i_cap.append(sim_data[idx]["prec_i_cap"])
         net.cell_response._agg_i_mem.append(sim_data[idx]["agg_i_mem"])
         net.cell_response._agg_ina.append(sim_data[idx]["agg_ina"])
         net.cell_response._agg_ik.append(sim_data[idx]["agg_ik"])
