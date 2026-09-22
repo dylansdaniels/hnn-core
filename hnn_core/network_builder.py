@@ -381,23 +381,6 @@ class NetworkBuilder(object):
 
         self._build()
 
-    # [new]
-    def _register_imem_callback(self):
-        """
-        Register a CVode callback to gather i_mem for each cell at each step.
-        """
-
-        def _gather_all_cells_imem():
-            for cell in self._cells:
-                if hasattr(cell, "_gather_imem_data"):
-                    cell._gather_imem_data()
-
-        cvode = h.CVode()
-        cvode.use_fast_imem(1)
-        cvode.extra_scatter_gather(0, _gather_all_cells_imem)
-
-    # [end new]
-
     def _build(self):
         """Building the network in NEURON."""
 
@@ -550,22 +533,6 @@ class NetworkBuilder(object):
                     record_isec,
                     record_ca,
                     # [new]
-                    # record_agg_hh2,
-                    # record_agg_ica,
-                    # record_agg_i_non_specific,
-                    # record_prec_i_cap,
-                    # record_agg_i_mem,
-                    # record_agg_ina,
-                    # record_agg_ik,
-                    # record_agg_i_cap,
-                    # record_ina_hh2,
-                    # record_ik_hh2,
-                    # record_ik_kca,
-                    # record_ik_km,
-                    # record_ica_ca,
-                    # record_ica_cat,
-                    # record_il_hh2,
-                    # record_i_ar,
                     self.tm_currents,
                     # [end new]
                 )
@@ -586,22 +553,8 @@ class NetworkBuilder(object):
                 self._drive_cells.append(drive_cell)
 
         # [new]
-        # i_mem recording setup
-        if "agg_i_mem" in self.tm_currents.keys():
-            # initialize PtrVector/Vector for each cell
-            for cell in self._cells:
-                if hasattr(cell, "_setup_imem_recording"):
-                    cell._setup_imem_recording()
-
-            # global callback for CVode
-            def _register_imem_callback():
-                for cell in self._cells:
-                    if hasattr(cell, "_gather_imem_data"):
-                        cell._gather_imem_data()
-
-            cvode = h.CVode()
-            cvode.use_fast_imem(1)  # ensure fast i_mem recording is active
-            cvode.extra_scatter_gather(0, _register_imem_callback)
+        # setup i_mem recording in the global solver if required
+        self._record_derived_currents()
         # [end new]
 
     # connections:
@@ -670,6 +623,29 @@ class NetworkBuilder(object):
                             net._inplane_distance,
                         )
                         self.ncs[connection_name].append(nc)
+
+    # [new]
+    def _record_derived_currents(self):
+        derived_currents = []
+        for current_name, current_recording_metadata in self.tm_currents.items():
+            if current_recording_metadata["type"] == "derived":
+                derived_currents.append(current_name)
+
+        if derived_currents:
+            # ensure fast i_mem recording is enabled in the global solver
+            cvode = h.CVode()
+            cvode.use_fast_imem(1)
+
+            # initialize current recordings for each cell
+            for cell in self._cells:
+                if hasattr(cell, "_setup_imem_recording"):
+                    for current_name in derived_currents:
+                        cell._setup_imem_recording(
+                            current_name=current_name,
+                            ref=self.tm_currents[current_name]["ref"],
+                            recorded_sections=self.tm_currents[current_name]["recorded_sections"],
+                        )
+    # [end new]
 
     def _record_extracellular(self):
         for arr_name, arr in self.net.rec_arrays.items():

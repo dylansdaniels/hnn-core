@@ -976,57 +976,44 @@ class Cell:
                         currents[sec_name] = h.Vector()
                         currents[sec_name].record(getattr(getattr(seg, mech), ref))
 
-    def _setup_imem_recording(self):
+    def _setup_imem_recording(
+        self,
+        current_name,
+        ref,
+        recorded_sections,
+    ):
         """
         This functions handles the recording of the *total* transmembrane current,
-        "i_mem", using pointer vectors (h.PtrVector)
+        "_ref_i_membrane_", and the *total* capacitive current "_ref_i_cap".
 
-        This is required because i_mem can't be passively recorded at each time step
-        by attaching h.Vector().record, unlike the other transmembrane currents.
-        The total transmembrane current is only exposed and caluted when explicitly
-        requested, which is done by calling _CVODE.use_fast_imem(1)
+        Since i_membrane and i_cap are *derived* variables, they can't be passively
+        recorded at each time step by attaching h.Vector().record to the Cell, as is
+        done for the other transmembrane currents.
+
+        These are the *only* two transmembrane currents that require a change to
+        the global solver. Specifically, "use_fast_imem" must be enabled. This is
+        done in NetworkBuilder.create_cells_and_drives() by calling:
+            cvode = h.CVode()
+            cvode.use_fast_imem(1)
+
+        The application of "use_fast_imem" requires that ref variables are recorded at
+        the *segment* level. Therefore, "per_segment" must be set to True in order to
+        record these currents.
         """
-        all_segments = []
-        for sec in self._nrn_sections.values():
-            for seg in sec:
-                all_segments.append(seg)
+        self.tm_currents_data[current_name] = {}
 
-        n_segs = len(all_segments)
-        self._imem_ptrvec = h.PtrVector(n_segs)
-        self._imem_vec = h.Vector(n_segs)
+        if recorded_sections == "all":
+            sections = self._nrn_sections
+        elif recorded_sections == "soma":
+            sections = {"soma": self._nrn_sections["soma"]}
 
-        # NEW: icap vectors for high-precision validation
-        self._icap_ptrvec = h.PtrVector(n_segs)
-        self._icap_vec = h.Vector(n_segs)
-
-        for idx, seg in enumerate(all_segments):
-            self._imem_ptrvec.pset(idx, seg._ref_i_membrane_)
-            self._icap_ptrvec.pset(idx, seg._ref_i_cap)
-
-        # store per-segment h.Vectors for direct access
-        self.agg_i_mem = {}
-        for sec_name, sec in self._nrn_sections.items():
-            self.agg_i_mem[sec_name] = {}
+        for sec_name, sec in sections.items():
+            self.tm_currents_data[current_name][sec_name] = {}
             for i, seg in enumerate(sec):
                 seg_key = f"seg_{i + 1}"
-                self.agg_i_mem[sec_name][seg_key] = h.Vector()
-                self.agg_i_mem[sec_name][seg_key].record(seg._ref_i_membrane_)
-
-        # storage for icap
-        self.prec_i_cap = {}
-        for sec_name, sec in self._nrn_sections.items():
-            self.prec_i_cap[sec_name] = {}
-            for i, seg in enumerate(sec):
-                seg_key = f"seg_{i + 1}"
-                self.prec_i_cap[sec_name][seg_key] = h.Vector()
-                self.prec_i_cap[sec_name][seg_key].record(seg._ref_i_cap)
-
-    def _gather_imem_data(self):
-        """
-        Gathers the PtrVector values into h.Vector after each CVode step.
-        """
-        self._imem_ptrvec.gather(self._imem_vec)
-        self._icap_ptrvec.gather(self._icap_vec)
+                vec = h.Vector()
+                vec.record(getattr(seg, ref))
+                self.tm_currents_data[current_name][sec_name][seg_key] = vec
 
     # [end new]
 
@@ -1102,24 +1089,22 @@ class Cell:
         # [new]
         # transmembrane currents
         if isinstance(tm_currents, dict):
-            if "agg_i_mem" in tm_currents.keys():
-                self._setup_imem_recording()
-
-            for current, values in tm_currents.items():
-                type = values["type"]
+            for current_name, values in tm_currents.items():
+                current_type = values["type"]
                 mech = values["mech"]
                 ref = values["ref"]
                 per_segment = values["per_segment"]
-                sections= values["recorded_sections"]
+                sections = values["recorded_sections"]
 
-                self._record_transmembrane_currents(
-                    record_flag=sections,
-                    name=current,
-                    section_names=section_names,
-                    mech=mech,
-                    ref=ref,
-                    per_segment=per_segment,
-                )
+                if current_type == "ionic":
+                    self._record_transmembrane_currents(
+                        record_flag=sections,
+                        name=current_name,
+                        section_names=section_names,
+                        mech=mech,
+                        ref=ref,
+                        per_segment=per_segment,
+                    )
         # [end new]
 
     def syn_create(self, secloc, e, tau1, tau2):
