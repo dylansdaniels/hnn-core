@@ -373,8 +373,11 @@ class NetworkBuilder(object):
             self._expose_imem = True
         # [new]
         # conditionally expose "agg_i_mem"
-        if "agg_i_mem" in self.tm_currents.keys():
-            self._expose_imem = True
+        if self.tm_currents is not None:
+            for _, metadata in self.tm_currents.items():
+                if metadata["type"] == "derived":
+                    self._record_derived_currents()
+                    break
         # [end new]
 
         self._rank = 0
@@ -554,7 +557,11 @@ class NetworkBuilder(object):
 
         # [new]
         # setup i_mem recording in the global solver if required
-        self._record_derived_currents()
+        if self.tm_currents is not None:
+            for _, metadata in self.tm_currents.items():
+                if metadata["type"] == "derived":
+                    self._record_derived_currents()
+                    break
         # [end new]
 
     # connections:
