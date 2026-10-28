@@ -63,3 +63,4 @@ __pycache__
 
 # data
 hnn_core/tep_modeling_scripts/data
+hnn_core/tep_modeling_scripts/networks/archive
