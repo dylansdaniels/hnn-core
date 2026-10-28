@@ -715,6 +715,17 @@ def duecker_ET_model(
     add_drives_from_params=False,
     legacy_mode=False,
     mesh_shape=(10, 10),
+    # --------------------------------------------------
+    # [DEV] Joyce NGFC updates
+    # --------------------------------------------------
+    # Note:
+    # - changing duecker_ET_model is not strictly necessary for
+    #   implementing the drive; it is only done for convenience
+    ngfc_weights_gabab=None,
+    ngfc_weights_gabaa=None,
+    add_ngfc=False
+    # [END DEV]
+    # --------------------------------------------------
 ):
     """Initiate the Duecker model (like old calcium model and then replace with new cells)
 
@@ -1054,6 +1065,38 @@ def duecker_ET_model(
     loc = "soma"
     receptor = "ampa"
     net.add_connection(src_cell, target_cell, loc, receptor, weight, delay, lamtha)
+
+    # --------------------------------------------------
+    # [DEV] Joyce NGFC updates
+    # --------------------------------------------------
+    # Note:
+    # - changing duecker_ET_model is not strictly necessary for
+    #   implementing the drive; it is only done for convenience
+    # NGFC drive: models slow apical-tuft inhibition from neurogliaform cells
+    _ngfc_weights_gabab = (
+        ngfc_weights_gabab
+        if ngfc_weights_gabab is not None
+        else {"L2_pyramidal": 0.001, "L5_pyramidal": 0.001}
+    )
+    _ngfc_weights_gabaa = (
+        ngfc_weights_gabaa
+        if ngfc_weights_gabaa is not None
+        else {"L2_pyramidal": 0.001, "L5_pyramidal": 0.001}
+    )
+
+    if add_ngfc:
+        net.add_ngfc_drive(
+            "ngfc",
+            mu=135.0,
+            sigma=4.0,
+            numspikes=1,
+            weights_gabab=_ngfc_weights_gabab,
+            weights_gabaa=_ngfc_weights_gabaa,
+            synapse_type="both",
+            synaptic_delays={"L2_pyramidal": 0.1, "L5ET": 0.1},
+        )
+    # [END DEV]
+    # --------------------------------------------------
 
     return net
 

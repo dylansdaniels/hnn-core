@@ -1072,6 +1072,143 @@ class Network:
             probability,
         )
 
+    # --------------------------------------------------
+    # [DEV] Joyce NGFC updates
+    # --------------------------------------------------
+    def add_ngfc_drive(
+        self,
+        name,
+        *,
+        mu,
+        sigma,
+        numspikes,
+        weights_gabab=None,
+        weights_gabaa=None,
+        synapse_type="gabab",
+        n_drive_cells="n_cells",
+        cell_specific=True,
+        space_constant=3.0,
+        synaptic_delays=0.1,
+        probability=1.0,
+        event_seed=2,
+        conn_seed=3,
+    ):
+        """Add an 'ngfc' external drive targeting apical inhibitory receptors.
+
+        Models input from neurogliaform cells (NGFCs), activating GABAB and/or
+        GABAA receptors on the ``apical_tuft`` section of pyramidal cells.
+        Spike times are drawn from a Gaussian distribution, identical to the
+        evoked drive mechanism.
+
+        Parameters
+        ----------
+        name : str
+            Unique name for the drive.
+        mu : float
+            Mean of the Gaussian spike time distribution (ms).
+        sigma : float
+            Standard deviation of the Gaussian spike time distribution (ms).
+        numspikes : int
+            Number of spikes per drive cell per trial.
+        weights_gabab : dict or None
+            Synaptic weights (in uS) of GABAB receptors on each targeted cell
+            type (dict keys). Only pyramidal cell types with an
+            ``apical_tuft`` section are valid targets. Ignored when
+            ``synapse_type='gabaa'``.
+        weights_gabaa : dict or None
+            Synaptic weights (in uS) of GABAA receptors on each targeted cell
+            type (dict keys). Only pyramidal cell types with an
+            ``apical_tuft`` section are valid targets. Ignored when
+            ``synapse_type='gabab'``.
+        synapse_type : str
+            Which inhibitory synapse(s) to activate on ``apical_tuft``.
+            Must be one of ``'gabab'`` (default), ``'gabaa'``, or ``'both'``.
+            ``'gabab'`` uses only ``weights_gabab``; ``'gabaa'`` uses only
+            ``weights_gabaa``; ``'both'`` uses both weight dicts.
+        n_drive_cells : int | 'n_cells'
+            The number of drive cells that each contribute an independently
+            sampled synaptic spike. If ``'n_cells'`` (default) and
+            ``cell_specific=True``, one drive cell is assigned per target
+            cell (1-to-1). Otherwise drive cells connect all-to-all. To
+            synchronize the drive across the network with a single spike,
+            set ``n_drive_cells=1`` and ``cell_specific=False``.
+        cell_specific : bool
+            Whether each artificial drive cell has 1-to-1 (True, default) or
+            all-to-all (False) connectivity. 1-to-1 requires
+            ``n_drive_cells='n_cells'``.
+        space_constant : float
+            Lateral dispersion of synaptic weights and delays from the column
+            origin, measured in units of
+            :attr:`~hnn_core.Network.inplane_distance`.
+        synaptic_delays : dict or float
+            Synaptic delay (in ms) at the column origin. If float, applies to
+            all target cell types. Use a dict for per-cell-type delays.
+        probability : dict or float
+            Connection probability between any src-target pair (default: 1.0).
+            Use a dict for per-cell-type probabilities.
+        event_seed : int
+            Seed for the random number generator used to produce spike times
+            (default: 2). Incremented across trials.
+        conn_seed : int
+            Seed for the random number generator used to select connected
+            pairs when ``probability < 1.0`` (default: 3). Fixed across
+            trials.
+
+        Notes
+        -----
+        The location is fixed to ``'apical_tuft'``. The active receptor(s)
+        are controlled by ``synapse_type``: ``'gabab'`` only, ``'gabaa'``
+        only, or ``'both'``. Only pyramidal cell types that have an
+        ``apical_tuft`` section are valid targets.
+
+        Random seeding behavior across trials is the same as for
+        :meth:`~hnn_core.Network.add_evoked_drive`.
+        """
+        valid_synapse_types = ("gabab", "gabaa", "both")
+        if synapse_type not in valid_synapse_types:
+            raise ValueError(
+                f"synapse_type must be one of {valid_synapse_types}; "
+                f"got '{synapse_type}'"
+            )
+        if not self._legacy_mode:
+            _check_drive_parameter_values("ngfc", sigma=sigma, numspikes=numspikes)
+
+        active_gabab = weights_gabab if synapse_type in ("gabab", "both") else None
+        active_gabaa = weights_gabaa if synapse_type in ("gabaa", "both") else None
+
+        drive = _NetworkDrive()
+        drive["type"] = "ngfc"
+        drive["location"] = "apical_tuft"
+        drive["n_drive_cells"] = n_drive_cells
+        drive["event_seed"] = event_seed
+        drive["conn_seed"] = conn_seed
+        drive["dynamics"] = dict(mu=mu, sigma=sigma, numspikes=numspikes)
+        drive["events"] = list()
+        drive["weights_ampa"] = None
+        drive["weights_nmda"] = None
+        drive["weights_gabab"] = weights_gabab
+        drive["weights_gabaa"] = weights_gabaa
+        drive["synapse_type"] = synapse_type
+        drive["synaptic_delays"] = synaptic_delays
+        drive["probability"] = probability
+
+        self._attach_drive(
+            name,
+            drive,
+            weights_ampa=None,
+            weights_nmda=None,
+            location="apical_tuft",
+            space_constant=space_constant,
+            synaptic_delays=synaptic_delays,
+            n_drive_cells=n_drive_cells,
+            cell_specific=cell_specific,
+            probability=probability,
+            weights_gabab=active_gabab,
+            weights_gabaa=active_gabaa,
+        )
+    # [END DEV]
+    # --------------------------------------------------
+
     def add_poisson_drive(
         self,
         name,
@@ -1500,6 +1637,13 @@ class Network:
         n_drive_cells,
         cell_specific,
         probability,
+        # --------------------------------------------------
+        # [DEV] Joyce NGFC updates
+        # --------------------------------------------------
+        weights_gabab=None,
+        weights_gabaa=None,
+        # [END DEV]
+        # --------------------------------------------------
     ):
         """Attach a drive to network based on connectivity information
 
@@ -1570,6 +1714,13 @@ class Network:
                 location,
                 self.cell_types,
                 probability=probability,
+                # --------------------------------------------------
+                # [DEV] Joyce NGFC updates
+                # --------------------------------------------------
+                weights_gabab=weights_gabab,
+                weights_gabaa=weights_gabaa,
+                # [END DEV]
+                # --------------------------------------------------
             )
         )
 
@@ -3047,7 +3198,7 @@ class _NetworkDrive(dict):
     location : str
         Target location of synapses ('distal' or 'proximal').
     type : str
-        Examples: 'evoked', 'gaussian', 'poisson', 'bursty'
+        Examples: 'evoked', 'gaussian', 'poisson', 'bursty', 'ngfc'
     events : list of lists
         List of spike time lists. First index is of length n_trials. Second
         index is over the 'artificial' cells associated with this drive.
