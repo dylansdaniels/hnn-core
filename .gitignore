@@ -60,3 +60,6 @@ __pycache__
 .ipynb_checkpoints
 *.log
 .DS_Store
+
+# data
+hnn_core/tep_modeling_scripts/data
