@@ -52,7 +52,14 @@ fig, axes = plt.subplots(
 )
 
 net.cell_response.plot_spikes_hist(
-    ax=axes[0], spike_types=["evprox", "evdist", "ngfc"], trial_idx=0, show=False
+    ax=axes[0],
+    spike_types=[
+        "evprox",
+        "evdist",
+        # "ngfc",  # [DSD] NOTE: removed NGFC
+    ],
+    trial_idx=0,
+    show=False,
 )
 
 plot_dipole(
@@ -80,7 +87,11 @@ plot_dipole(
     label="Simulation",
 )
 
-net.cell_response.plot_spikes_raster(ax=axes[4], show=False, show_legend=False)
+net.cell_response.plot_spikes_raster(
+    ax=axes[4],
+    show=False,
+    show_legend=False,
+)
 
 plt.show()
 
@@ -92,7 +103,14 @@ l5_gids = np.array(gids["L5_pyramidal"])
 
 # get calcium for each cell tuft
 trial_idx = 0
-ca_l5_tuft = np.zeros((l5_gids.shape[0], len(net.cell_response.times)))
+ca_l5_tuft = np.zeros(
+    (
+        l5_gids.shape[0],
+        len(
+            net.cell_response.times,
+        ),
+    ),
+)
 
 for i, g in enumerate(l5_gids.astype(int)):
     ca_l5_tuft[i] = net.cell_response.ca[trial_idx][g]["apical_tuft"]
@@ -104,12 +122,28 @@ ca_l5_tuft_sort = ca_l5_tuft[sort_idx]
 
 # plot
 fig, axes = plt.subplots(
-    2, 1, sharex=False, figsize=(8, 6), constrained_layout=True, height_ratios=[1, 4]
+    2,
+    1,
+    sharex=False,
+    figsize=(8, 6),
+    constrained_layout=True,
+    height_ratios=[1, 4],
 )
-timevec = np.arange(0, len(net.cell_response.times), 1)
+timevec = np.arange(
+    0,
+    len(net.cell_response.times),
+    1,
+)
 
 net.cell_response.plot_spikes_hist(
-    ax=axes[0], spike_types=["evprox", "evdist", "ngfc"], trial_idx=0, show=False
+    ax=axes[0],
+    spike_types=[
+        "evprox",
+        "evdist",
+        # "ngfc",  # [DSD] NOTE: removed NGFC
+    ],
+    trial_idx=0,
+    show=False,
 )
 
 # calcium concentration
@@ -135,7 +169,11 @@ cb.set_label("Ca concentration $mM$")
 n_points = len(timevec)
 
 # Convert desired tick times (in ms) to indices in timevec
-tick_times = np.arange(0, tstop + 1 - np.mod(tstop, 50), 50)  # 0, 50, ..., 300
+tick_times = np.arange(
+    0,
+    tstop + 1 - np.mod(tstop, 50),
+    50,
+)  # 0, 50, ..., 300
 tick_indices = (tick_times / tstop * n_points).astype(int)
 
 # Set ticks and labels
@@ -145,13 +183,23 @@ axes[1].set_xlim(0, n_points)
 ax2 = axes[1].twinx()
 
 # plot the dipole
-ax2.plot(timevec, dpls_smoothed[0].data["agg"], color=(1, 1, 1), linewidth=2)
+ax2.plot(
+    timevec,
+    dpls_smoothed[0].data["agg"],
+    color=(1, 1, 1),
+    linewidth=2,
+)
 ax2.set_ylabel("Dipole Moment (nAm)")
 
 # %%
 # Plotting network calcium concentration spatial distribution through time
 fig, axes = plt.subplots(
-    3, 3, sharex=True, sharey=True, figsize=(8, 6), constrained_layout=True
+    3,
+    3,
+    sharex=True,
+    sharey=True,
+    figsize=(8, 6),
+    constrained_layout=True,
 )
 
 # set start and end time for plotting
@@ -163,15 +211,29 @@ start_vec = start * 40
 stop_vec = stop * 40  # convert to timevec
 
 # looping through each time interval to plot calcium spatial distribution
-for i, ax in zip(np.arange(start_vec, stop_vec, interval * 40), axes.flat):
+for i, ax in zip(
+    np.arange(start_vec, stop_vec, interval * 40),
+    axes.flat,
+):
     ca_concentration = ca_l5_tuft[:, i : i + 1]
     grid_ca = ca_concentration.reshape((10, 10))
     c = ax.pcolormesh(
-        np.arange(0, 10), np.arange(0, 10), grid_ca, shading="auto", vmin=0, vmax=0.0006
-    )  # vmax may need to be adjusted to accomodate Ca concentration magnitude
+        np.arange(0, 10),
+        np.arange(0, 10),
+        grid_ca,
+        shading="auto",
+        vmin=0,
+        vmax=0.0006,  # vmax can be adjusted to accommodate Ca concentration magnitude
+    )
     ax.set_title(f"{round(i / len(timevec) * tstop)} ms")
 
-fig.colorbar(c, ax=axes, location="right", shrink=0.8, label="Calcium concentration")
+fig.colorbar(
+    c,
+    ax=axes,
+    location="right",
+    shrink=0.8,
+    label="Calcium concentration",
+)
 fig.suptitle("Spatial Distribution of L5 Apical Ca Concentration")
 plt.xticks([])
 plt.yticks([])
@@ -188,9 +250,24 @@ def calculate_mg_block(Vm):
     return mgblock
 
 
-apical_tuft_v = np.zeros((len(l5_gids), len(net.cell_response.times)))
-apical_tuft_mg = np.zeros((len(l5_gids), len(net.cell_response.times)))
-apical_tuft_nmda = np.zeros((len(l5_gids), len(net.cell_response.times)))
+apical_tuft_v = np.zeros(
+    (
+        len(l5_gids),
+        len(net.cell_response.times),
+    )
+)
+apical_tuft_mg = np.zeros(
+    (
+        len(l5_gids),
+        len(net.cell_response.times),
+    )
+)
+apical_tuft_nmda = np.zeros(
+    (
+        len(l5_gids),
+        len(net.cell_response.times),
+    )
+)
 
 trial_idx = 0
 
@@ -219,7 +296,12 @@ std_nmda = apical_tuft_nmda.std(axis=0)
 
 # plotting
 fig, axes = plt.subplots(
-    3, 1, sharex=False, figsize=(6, 8), constrained_layout=True, height_ratios=[1, 1, 1]
+    3,
+    1,
+    sharex=False,
+    figsize=(6, 8),
+    constrained_layout=True,
+    height_ratios=[1, 1, 1],
 )
 
 trial_idx = 0
@@ -227,18 +309,31 @@ cell_idx = 0
 
 # plot NMDA curent trace
 axes[0].plot(times, mean_nmda)
-axes[0].fill_between(times, mean_nmda - std_nmda, mean_nmda + std_nmda, alpha=0.1)
+axes[0].fill_between(
+    times,
+    mean_nmda - std_nmda,
+    mean_nmda + std_nmda,
+    alpha=0.1,
+)
 axes[0].set_title("Apical Tuft NMDA current")
 
 # plot membrane potential trace
 axes[1].plot(times, mean_v)
-axes[1].fill_between(times, mean_v - std_v, mean_v + std_v, alpha=0.1)
+axes[1].fill_between(
+    times,
+    mean_v - std_v,
+    mean_v + std_v,
+    alpha=0.1,
+)
 axes[1].set_title("Apical Tuft Membrane Voltage")
 
 # plot mgblock status
 axes[2].plot(times, mean_mg_opening)
 axes[2].fill_between(
-    times, mean_mg_opening - std_mg_opening, mean_mg_opening + std_mg_opening, alpha=0.1
+    times,
+    mean_mg_opening - std_mg_opening,
+    mean_mg_opening + std_mg_opening,
+    alpha=0.1,
 )
 axes[2].set_title("Magnesium Opening Probability")
 
