@@ -273,7 +273,7 @@ class Optimizer:
 
         constraints = self._assemble_constraints(self.constraints)
 
-        opt_params, obj, net_ = self._run_opt(
+        opt_params, obj, net_, raw_obj, es = self._run_opt(
             self._initial_net,
             self.tstop,
             constraints,
@@ -287,6 +287,8 @@ class Optimizer:
         self.net_ = net_
         self.obj_ = obj
         self.opt_params_ = opt_params
+        self.raw_obj_ = raw_obj
+        self.es_ = es
 
     def plot_convergence(self, ax=None, show=True):
         """Convergence plot.
@@ -622,6 +624,7 @@ def _run_opt_cma(
     best_params = es.result.xbest
 
     # get objective values
+    raw_obj = obj_values.copy()
     obj = [np.min(obj_values[:idx]) for idx in range(1, max_iter + 1)]
 
     # get optimized net
@@ -629,7 +632,7 @@ def _run_opt_cma(
     net_ = initial_net.copy()
     set_params(net_, params)
 
-    return best_params, obj, net_
+    return best_params, obj, net_, raw_obj, es
 
 
 def _run_opt_cobyla(

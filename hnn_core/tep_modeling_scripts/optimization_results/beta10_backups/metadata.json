@@ -1,0 +1,865 @@
+{
+    "subject": "beta10",
+    "optimizations": [
+        {
+            "starting_network": "/Users/dylandaniels/Repos/fork_hnn_copy/agg_80_optim_Final.json",
+            "drive_config": {
+                "evprox_1": {
+                    "mu": [
+                        1.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ]
+                },
+                "evdist_1": {
+                    "mu": [
+                        0.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ]
+                },
+                "evprox_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ]
+                },
+                "evdist_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ]
+                },
+                "evdist_3": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.85
+                        ],
+                        [
+                            "relative",
+                            1.15
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.75
+                        ],
+                        [
+                            "relative",
+                            1.5
+                        ]
+                    ]
+                }
+            },
+            "optimization_setup": {
+                "solver": "cma",
+                "n_procs": 10,
+                "n_jobs": 10,
+                "tstop": 300,
+                "scale_factor": 1,
+                "smooth_window_len": 20,
+                "max_iter": 10,
+                "n_trials": 3,
+                "tolfun": 1e-08
+            },
+            "optimization_summary": {
+                "termination_reason": {
+                    "maxiter": 10
+                },
+                "iterations_completed": 10,
+                "total_evaluations": 160,
+                "best_evaluation": 132,
+                "best_iteration": 9,
+                "best_objective": 0.01511380782334533
+            },
+            "iteration": 1,
+            "date_time": "2026-10-30 16:48"
+        },
+        {
+            "starting_network": "/Users/dylandaniels/Repos/fork_hnn_copy/agg_80_optim_Final.json",
+            "drive_config": {
+                "evprox_1": {
+                    "mu": [
+                        1.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_1": {
+                    "mu": [
+                        0.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_inhibitory": [
+                                [
+                                    "relative",
+                                    0.5
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_inhibitory": [
+                                [
+                                    "relative",
+                                    0.5
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evprox_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_3": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.85
+                        ],
+                        [
+                            "relative",
+                            1.15
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.75
+                        ],
+                        [
+                            "relative",
+                            1.5
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                }
+            },
+            "optimization_setup": {
+                "solver": "cma",
+                "n_procs": 10,
+                "n_jobs": 10,
+                "tstop": 300,
+                "scale_factor": 1,
+                "smooth_window_len": 20,
+                "max_iter": 1,
+                "n_trials": 3,
+                "tolfun": 1e-08
+            },
+            "optimization_summary": {
+                "termination_reason": {
+                    "maxiter": 1
+                },
+                "iterations_completed": 1,
+                "total_evaluations": 16,
+                "best_evaluation": 14,
+                "best_iteration": 1,
+                "best_objective": 0.01855362106283935
+            },
+            "iteration": 2,
+            "date_time": "2026-10-30 17:33"
+        },
+        {
+            "starting_network": "/Users/dylandaniels/Repos/fork_hnn_copy/agg_80_optim_Final.json",
+            "drive_config": {
+                "evprox_1": {
+                    "mu": [
+                        1.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_1": {
+                    "mu": [
+                        0.0,
+                        5.0
+                    ],
+                    "sigma": [
+                        1.0,
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_inhibitory": [
+                                [
+                                    "relative",
+                                    0.5
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_inhibitory": [
+                                [
+                                    "relative",
+                                    0.5
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evprox_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_2": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.6
+                        ],
+                        [
+                            "relative",
+                            1.4
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.33
+                        ],
+                        [
+                            "relative",
+                            3
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                },
+                "evdist_3": {
+                    "mu": [
+                        [
+                            "relative",
+                            0.85
+                        ],
+                        [
+                            "relative",
+                            1.15
+                        ]
+                    ],
+                    "sigma": [
+                        [
+                            "relative",
+                            0.75
+                        ],
+                        [
+                            "relative",
+                            1.5
+                        ]
+                    ],
+                    "weights": {
+                        "ampa": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        },
+                        "nmda": {
+                            "L2_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ],
+                            "L5_pyramidal": [
+                                [
+                                    "relative",
+                                    0.2
+                                ],
+                                [
+                                    "relative",
+                                    10
+                                ]
+                            ]
+                        }
+                    }
+                }
+            },
+            "optimization_setup": {
+                "solver": "cma",
+                "n_procs": 10,
+                "n_jobs": 10,
+                "tstop": 300,
+                "scale_factor": 1,
+                "smooth_window_len": 20,
+                "max_iter": 15,
+                "n_trials": 3,
+                "tolfun": 1e-08
+            },
+            "optimization_summary": {
+                "termination_reason": {
+                    "maxiter": 15
+                },
+                "iterations_completed": 15,
+                "total_evaluations": 240,
+                "best_evaluation": 231,
+                "best_iteration": 15,
+                "best_objective": 0.014734226246769889
+            },
+            "iteration": 3,
+            "date_time": "2026-10-30 19:24"
+        }
+    ]
+}

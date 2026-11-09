@@ -183,6 +183,7 @@ def _calculate_obj_fun(
             dt=obj_fun_kwargs.get("dt", 0.025),
             n_trials=obj_fun_kwargs.get("n_trials", 1),
             baseline_correction=obj_fun_kwargs.get("baseline_correction", True),
+            verbose=False,
         )
 
         # smooth & scale all dipoles
